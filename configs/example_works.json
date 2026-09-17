@@ -1,0 +1,61 @@
+{
+    "additional_costs": {
+        "price": 90129
+    },
+    "codes": {
+        "1": 32,
+        "12": 1,
+        "1232": -1,
+        "12342": 111,
+        "1234453232": 1892891,
+        "321": 90,
+        "8321243": 54231,
+        "832983": -1,
+        "832988": 321434,
+        "default": 300
+    },
+    "other_materials": {
+        "aviz": 121,
+        "gardanband": 3423
+    },
+    "time": {
+        "price": 100
+    },
+    "works": {
+        "goshvare_mosalasi": {
+            "materials": {
+                "aviz": 1
+            },
+            "monjogs": {
+                "8321243": 32,
+                "832983": 3
+            }
+        },
+        "goshvare_mosalasi2": {
+            "materials": {
+                "aviz": 13,
+                "gardanband": 23
+            },
+            "monjogs": {
+                "1234453232": 54,
+                "832988": 43
+            }
+        },
+        "qkljwlqw": {
+            "materials": {},
+            "monjogs": {
+                "12": 3
+            }
+        },
+        "test": {
+            "monjogs": {
+                "321": 10
+            }
+        },
+        "testwork2": {
+            "monjogs": {
+                "1232": 32
+            }
+        }
+    }
+}
