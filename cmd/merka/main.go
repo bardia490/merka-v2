@@ -21,16 +21,16 @@ import (
 
 func main() {
 	path := "configs/example_works.json"
-	db, err := database.Create(path) // db is a pointer to the database struct
+	err := database.LoadDataBase(path) // db is a pointer to the database struct
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	db.PrintFullDataBase()
-	if err := db.PrintWork("goshvare_mosalasi2"); err != nil {
+	database.PrintFullDataBase()
+	if err := database.PrintWork("goshvare_mosalasi2"); err != nil {
 		fmt.Println("couldn't print work")
 	}
-	if err = db.SaveDataBaseToFile(); err != nil {
+	if err = database.SaveDataBaseToFile(); err != nil {
 		fmt.Println(err.Error())
 	}
 }
