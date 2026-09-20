@@ -8,6 +8,13 @@ import (
 	"os"
 )
 
+var db *DB
+
+func init() {
+	db = newDB()
+}
+
+// this function will initialize the [db] global variable when the library is imported
 func newDB() *DB {
 	return &DB{
 		Works:           make(map[string]Work),
@@ -19,9 +26,7 @@ func newDB() *DB {
 	}
 }
 
-// initialize the database
-var db = newDB()
-
+// this function should be the first thing called when wanting to work with the libray
 // the [path] is the relative path to the configs\works.json file
 func LoadDataBase(path string) error {
 	if !utility.DoesFileExist(path) {
@@ -114,7 +119,7 @@ func (work *Work) printMaterials() error {
 	return nil
 }
 func (work *Work) printTime() error {
-	//Time map[string]Price
+	// work.Time: float64
 	t := work.Time
 	time, err := t.resolve()
 	if err != nil {
@@ -122,7 +127,8 @@ func (work *Work) printTime() error {
 		return err
 	}
 
-	p := db.Time["time"]
+	//Time map[string]Price
+	p := db.Time["price"]
 	price, err := p.resolve()
 	if err != nil {
 		fmt.Println("there was a problem with calculating the price of the time")
