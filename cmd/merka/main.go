@@ -26,7 +26,7 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
-	//database.PrintFullDataBase()
+	database.PrintFullDataBase()
 	//if err := database.PrintWork("goshvare_mosalasi2"); err != nil {
 	//	fmt.Println("couldn't print work")
 	//}
