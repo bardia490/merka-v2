@@ -56,6 +56,7 @@ func LoadDataBase(path string) error {
 		}
 		return err
 	}
+	runChecks(checkMonjogs | checkTimes | checkMaterials | checkTime | checkPrices | checkDefaultPrice)
 	return nil
 }
 

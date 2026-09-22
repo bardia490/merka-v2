@@ -9,7 +9,7 @@ const (
 	checkMaterials                        // checks if all works have non-empty materials field
 	checkTime                             // checks to see if the time price has been set
 	checkTimes                            // checks to see if all the works have a dedicated work time (minute) count
-	checkPriceTags                        // makes sure everywork that has a price-tag, its tag can be resolved
+	checkPrices                           // makes sure every field that can be a price, can be coereced into a price, either be parsing to a number or resolving the price tag
 	checkDefaultPrice                     // checks to see if a default price for price has been set
 )
 
@@ -19,19 +19,19 @@ func (s *setting) Set(flag setting)     { *s |= flag }
 func (s *setting) Clear(flag setting)   { *s &^= flag }
 func (s *setting) Toggle(flag setting)  { *s ^= flag }
 
-// for checking if the time:price field has been set and time_price <= 0
-func runTimeCheck() {
+// for checking if the time:price field has been set and time_price >= 0
+func runTimePriceCheck() {
 	p := db.Time["price"]
 	price, err := p.resolve()
 	if err != nil {
 		fmt.Printf("there is a problem with time:price => %s\n", err.Error())
 	} else if price <= 0 {
-		fmt.Printf("the price for time was 0 or negative: %f", price)
+		fmt.Printf("the price for time was 0 or negative: %f\n", price)
 	}
 }
 
-// checks to see if all the works have a dedicated work time (minute) count
-func (work *Work) runTimeChecks(name string) {
+// checks to see if the work has a dedicated work time (minute) count
+func (work *Work) runTimePriceChecks(name string) {
 	time_price := work.Time
 	if price, err := time_price.resolve(); err != nil {
 		fmt.Printf("in work: %s, time could not be set correctly with the following error: %s\n", name, err.Error())
@@ -40,17 +40,17 @@ func (work *Work) runTimeChecks(name string) {
 	}
 }
 
-// checks if all works have non-empty monjogs field
+// checks if the work has a non-empty monjogs field
 func (work *Work) runMonjogsCheck(name string) {
 	if len(work.Monjogs) == 0 {
-		fmt.Printf("there are no monjogs in the work: %s", name)
+		fmt.Printf("there are no monjogs in the work: %s\n", name)
 	}
 }
 
-// checks if all works have non-empty materials field
+// checks if the work has a non-empty materials field
 func (work *Work) runMaterialsCheck(name string) {
 	if len(work.Materials) == 0 {
-		fmt.Printf("there are no materials in the work: %s", name)
+		fmt.Printf("there are no materials in the work: %s\n", name)
 	}
 }
 
@@ -63,7 +63,48 @@ func runCheckDefaultPrice() {
 	}
 }
 
-func runChecks(s setting) {
+func runChecks(s setting) { // NOTE: add seperators
+	f_checkMonjogs := s.Has(checkMonjogs)
+	f_checkMaterials := s.Has(checkMaterials)
+	f_checkTimes := s.Has(checkTimes)
+	f_checkPrices := s.Has(checkPrices)
+	f_checkTime := s.Has(checkTime)
+	f_checkDefaultPrice := s.Has(checkDefaultPrice)
+
+	if f_checkDefaultPrice {
+		runCheckDefaultPrice()
+	}
+	if f_checkTime {
+		runTimePriceCheck()
+	}
+
+	for work_name, work := range db.Works {
+		if f_checkMonjogs {
+			work.runMonjogsCheck(work_name)
+		}
+		if f_checkMaterials {
+			work.runMaterialsCheck(work_name)
+		}
+		if f_checkTimes {
+			work.runTimePriceChecks(work_name)
+		}
+	}
+	if f_checkPrices {
+		for code_name, price := range db.Codes {
+			if _, err := price.resolve(); err != nil {
+				fmt.Printf("could not determine the price for Code: %s. ERROR: %s\n", code_name, err.Error())
+			}
+		}
+		for material_name, price := range db.OtherMaterials {
+			if _, err := price.resolve(); err != nil {
+				fmt.Printf("could not determine the price for Material: %s. ERROR: %s\n", material_name, err.Error())
+			}
+		}
+		additional_costs_price := db.AdditionalCosts["price"]
+		if _, err := additional_costs_price.resolve(); err != nil {
+			fmt.Printf("could not determine the price for additional_costs:price. ERROR: %s\n", err.Error())
+		}
+	}
 }
 
 func calculateLineAndColumnJsonError(data []byte, offset int64) (line, col int) {
