@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json/jsontext"
 	"encoding/json/v2"
+	"errors"
 	"fmt"
 	"merka-v2/pkg/utility"
 	"os"
@@ -37,8 +38,13 @@ func LoadDataBase(path string) error {
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal([]byte(contents), db)
+
+	err = json.Unmarshal(contents, db)
 	if err != nil {
+		if syntaxErr, ok := errors.AsType[*jsontext.SyntacticError](err); ok {
+			line, col := calculateLineAndColumnJsonError(contents, syntaxErr.ByteOffset)
+			return fmt.Errorf("there was a problem whith parsing the json file at line: %d, column: %d. the ERROR: %s", line, col, err.Error())
+		}
 		return err
 	}
 	return nil

@@ -65,3 +65,16 @@ func runCheckDefaultPrice() {
 
 func runChecks(s setting) {
 }
+
+func calculateLineAndColumnJsonError(data []byte, offset int64) (line, col int) {
+	line, col = 1, 1
+	for i := range offset {
+		if data[i] == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
+	}
+	return line, col
+}
