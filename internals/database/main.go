@@ -45,6 +45,15 @@ func LoadDataBase(path string) error {
 			line, col := calculateLineAndColumnJsonError(contents, syntaxErr.ByteOffset)
 			return fmt.Errorf("there was a problem whith parsing the json file at line: %d, column: %d. the ERROR: %s", line, col, err.Error())
 		}
+		if semErr, ok := errors.AsType[*json.SemanticError](err); ok {
+			// SemanticError in v2 includes JSONPointer path information!
+			if semErr.ByteOffset > 0 {
+				line, col := calculateLineAndColumnJsonError(contents, semErr.ByteOffset)
+				return fmt.Errorf("JSON type mismatch at line %d, column %d (at path %q): %w",
+					line, col, semErr.JSONPointer, semErr)
+			}
+			return fmt.Errorf("JSON type mismatch at path %q: %w", semErr.JSONPointer, semErr)
+		}
 		return err
 	}
 	return nil
