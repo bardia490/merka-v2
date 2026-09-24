@@ -23,7 +23,7 @@ func GetAnswer(question string, options []string) (index int) {
 		scanner.Scan()
 		answer := strings.TrimSpace(scanner.Text())
 		if result, err := strconv.Atoi(answer); err == nil { // first try to convert the answer directly to index
-			index = result
+			index = result - 1
 		} else {
 			index = slices.Index(options, answer) // try to find the answer in options if it was found
 		}

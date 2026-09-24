@@ -16,7 +16,9 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	database "merka-v2/internals/database"
+	"merka-v2/pkg/questions"
 )
 
 func main() {
@@ -27,7 +29,9 @@ func main() {
 		return
 	}
 	//database.PrintFullDataBase()
-	database.GetAnswer("something", []string{"bardia", "nika"})
+	_questions := []string{"bardia", "nika"}
+	index := questions.GetAnswer("something", _questions[:])
+	slog.Error("you have chosen:", _questions[index], "")
 	//if err := database.PrintWork("goshvare_mosalasi2"); err != nil {
 	//	fmt.Println("couldn't print work")
 	//}
