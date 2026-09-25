@@ -20,9 +20,9 @@ type Price struct {
 
 // the items each work should be able to hold (NOTE: change Time from Price to something else)
 type Work struct {
-	Monjogs   map[string]int `json:"monjogs"`
-	Materials map[string]int `json:"materials"`
-	Time      Price          `json:"times"`
+	Monjogs   map[string]float64 `json:"monjogs"`
+	Materials map[string]float64 `json:"materials"`
+	Time      float64            `json:"time"`
 }
 
 // Implement the Unmarshal interface so i can read Price values easier

@@ -5,8 +5,10 @@ import (
 	"encoding/json/v2"
 	"errors"
 	"fmt"
+	"merka-v2/pkg/questions"
 	"merka-v2/pkg/utility"
 	"os"
+	"strings"
 )
 
 var db *DB
@@ -44,7 +46,7 @@ func LoadDataBase(path string) error {
 		// check for a syntax Error
 		if syntaxErr, ok := errors.AsType[*jsontext.SyntacticError](err); ok {
 			line, col := calculateLineAndColumnJsonError(contents, syntaxErr.ByteOffset)
-			return fmt.Errorf("there was a problem whith parsing the json file at line: %d, column: %d. the ERROR: %s", line, col, err.Error())
+			return fmt.Errorf("there was a problem whith parsing the json file at line: %d, column: %d.\nthe ERROR: %s", line, col, err.Error())
 		}
 		// check for symantic Error
 		if semErr, ok := errors.AsType[*json.SemanticError](err); ok {
@@ -62,7 +64,7 @@ func LoadDataBase(path string) error {
 	return nil
 }
 
-// prints all the works names + monjog + material + time costs
+// prints all the work names + monjog + material + time costs
 func PrintFullDataBase() {
 	printWorks(db.Works, true)
 }
@@ -135,7 +137,7 @@ func (work *Work) calcMonjogPrices(verbose bool) (total_price float64, resolve_e
 		}
 		total_price += price * float64(m_count)
 		if verbose {
-			fmt.Printf("monjog code: %s| monjog count: %d| monjog price: %.2f| total price: %.2f\n", m_code, m_count, price, float64(m_count)*price)
+			fmt.Printf("monjog code: %s| monjog count: %f| monjog price: %.2f| total price: %.2f\n", m_code, m_count, price, float64(m_count)*price)
 		}
 	}
 	if verbose {
@@ -162,7 +164,7 @@ func (work *Work) calcMaterialPrices(verbose bool) (total_price float64, resolve
 				return 0, err
 			}
 			if verbose {
-				fmt.Printf("material name: %s| material price: %d| material price: %f.2| total price: %.2f\n", m_name, m_count, price, float64(m_count)*price)
+				fmt.Printf("material name: %s| material price: %f| material price: %f.2| total price: %.2f\n", m_name, m_count, price, float64(m_count)*price)
 			}
 			total_price += price * float64(m_count)
 		}
@@ -180,12 +182,7 @@ func (work *Work) calcMaterialPrices(verbose bool) (total_price float64, resolve
 // resolved (see [resolve] function for more details on resolving prices)
 func (work *Work) calcTimePrice(verbose bool) (total_price float64, resolve_error error) {
 	// work.Time: float64
-	t := work.Time
-	time, err := t.resolve()
-	if err != nil {
-		fmt.Println("there was a problem with calculating the amount of the time")
-		return 0, err
-	}
+	time := work.Time
 
 	//Time map[string]Price
 	p := db.Time["price"]
@@ -250,6 +247,58 @@ func getDefaultPrice() float64 {
 	defaultPrice := db.Codes["default"]
 	val, _ := defaultPrice.resolve()
 	return val
+}
+
+// NOTE: add price checking for monjogs and materials to make sure a monjog or materials is or is not in the database
+func AddWork() {
+	var work Work
+	name_condition := func(name string) bool { return len(name) > 0 }
+	work_name := questions.PromptString("please Enter work name:", "the name can be anything you want but it needs to have at least one character long", name_condition)
+	_ = work_name
+	var question strings.Builder
+	// get the monjogs for work (monjogs: map[string]int)
+	monjogs := make(map[string]float64)
+	// this one is always true since if the length of the monjog_name is zero it means we are done
+	monjog_name_condition := func(name string) bool { return true }
+	monjog_count_condition := func(count float64) bool { return count > 0 }
+	for {
+		monjog_name := questions.PromptString("please Enter monjog name:", "the name can be anything you want but it needs to have at least one character lon, when you were done you can just press Enter", monjog_name_condition)
+		// we are done
+		if len(monjog_name) == 0 {
+			break
+		}
+		question.WriteString("Please Enter ")
+		question.WriteString(monjog_name)
+		question.WriteString("monjog count")
+		monjog_count := questions.PromptFloat(question.String(), "the count must be a positive integer", monjog_count_condition)
+		monjogs[monjog_name] = monjog_count
+		question.Reset()
+	}
+	work.Monjogs = monjogs
+	// get the materials for work (materials: map[string]int)
+	materials := make(map[string]float64)
+	// this one is always true since if the length of the material_name is zero it means we are done
+	material_name_condition := func(name string) bool { return true }
+	material_count_condition := func(count float64) bool { return count > 0 }
+	for {
+		material_name := questions.PromptString("please Enter material name:", "the name can be anything you want but it needs to have at least one character lon, when you were done you can just press Enter", material_name_condition)
+		// we are done
+		if len(material_name) == 0 {
+			break
+		}
+		var question strings.Builder
+		question.WriteString("Please Enter ")
+		question.WriteString(material_name)
+		question.WriteString("material count")
+		material_count := questions.PromptFloat(question.String(), "the count must be a positive integer", material_count_condition)
+		materials[material_name] = material_count
+		question.Reset()
+	}
+	work.Materials = materials
+	// get the time for work
+	time := questions.PromptTime()
+	work.Time = time
+	db.Works[work_name] = work
 }
 
 func SaveDataBaseToFile() error {

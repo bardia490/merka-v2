@@ -32,11 +32,9 @@ func runTimePriceCheck() {
 
 // checks to see if the work has a dedicated work time (minute) count
 func (work *Work) runTimePriceChecks(name string) {
-	time_price := work.Time
-	if price, err := time_price.resolve(); err != nil {
-		fmt.Printf("in work: %s, time could not be set correctly with the following error: %s\n", name, err.Error())
-	} else if price <= 0 {
-		fmt.Printf("in work: %s, the price for time was either 0 or negative: %f\n", name, price)
+	time := work.Time
+	if time <= 0 {
+		fmt.Printf("in work: %s, the price for time was either 0 or negative: %f\n", name, time)
 	}
 }
 
