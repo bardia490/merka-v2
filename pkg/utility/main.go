@@ -14,7 +14,7 @@ func DoesFileExist(path string) bool {
 	if errors.Is(err, os.ErrNotExist) {
 		return false // File does not exist
 	}
-	// Note: Any other error means something else went wrong
+	// Any other error means something else went wrong
 	// (e.g., permission denied, broken symlink, etc.)
 	return false
 }

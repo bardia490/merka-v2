@@ -243,7 +243,7 @@ func (price *Price) resolve() (float64, error) {
 }
 
 // this function assumes a code with the name [default] always exists and its non negative
-// NOTE: Should probably add a checker function to make sure this is always the case (this is probably okay with the checker functions added now but i haven't tested it yet)
+// TODO: Should probably add a checker function to make sure this is always the case (this is probably okay with the checker functions added now but i haven't tested it yet)
 func getDefaultPrice() float64 {
 	defaultPrice := db.Codes["default"]
 	val, _ := defaultPrice.resolve()
@@ -354,7 +354,7 @@ func getMaterialsFromUser(materials map[string]float64) {
 	}
 }
 
-// NOTE: currently the getMaterialsFromUser and getMonjogsFromUser are exactly the same.
+// TODO: currently the getMaterialsFromUser and getMonjogsFromUser are exactly the same.
 // if i don't change my mind about their implementation in the future I should probably
 // use one function for both.
 func AddWork() {

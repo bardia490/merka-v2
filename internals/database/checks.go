@@ -61,7 +61,8 @@ func runCheckDefaultPrice() {
 	}
 }
 
-func runChecks(s setting) { // NOTE: add seperators
+// runs all the checks to make sure everything in database is correct
+func runChecks(s setting) { // TODO: add seperators
 	f_checkMonjogs := s.Has(checkMonjogs)
 	f_checkMaterials := s.Has(checkMaterials)
 	f_checkTimes := s.Has(checkTimes)
@@ -105,6 +106,7 @@ func runChecks(s setting) { // NOTE: add seperators
 	}
 }
 
+// Helper function for when encountering error during parsing the works.json file
 func calculateLineAndColumnJsonError(data []byte, offset int64) (line, col int) {
 	line, col = 1, 1
 	for i := range offset {
