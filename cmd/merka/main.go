@@ -21,7 +21,7 @@ import (
 
 func main() {
 	path := "configs/works.json"
-	err := database.LoadDataBase(path) // db is a pointer to the database struct
+	err := database.LoadDataBase(path)
 	if err != nil {
 		fmt.Println(err.Error())
 		return

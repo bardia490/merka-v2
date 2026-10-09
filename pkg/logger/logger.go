@@ -1,7 +1,7 @@
 package logger
 
 // use this packge for logging debug information using the slog.Info or other functions
-// Note: this is not intended for user experience
+// NOTE: this is not intended for user experience
 
 import (
 	"log/slog"

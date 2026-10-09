@@ -18,7 +18,8 @@ type Price struct {
 	Tag   string  // for PriceKind == PriceTag
 }
 
-// the items each work should be able to hold (NOTE: change Time from Price to something else)
+// the items each work should be able to hold
+// time is float64 because its the minutes it takes to finish the job
 type Work struct {
 	Monjogs   map[string]float64 `json:"monjogs"`
 	Materials map[string]float64 `json:"materials"`
@@ -65,3 +66,6 @@ type DB struct {
 	AdditionalCosts map[string]Price   `json:"additional_costs"`
 	PriceTags       map[string]float64 `json:"price tags"`
 }
+
+// tags work as follows:
+// tag_nam1: float64 (tags cannot reference each other)
