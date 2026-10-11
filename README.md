@@ -7,6 +7,7 @@ the app will also be getting new updates to its UI alongside new features and pe
 # PLANED FOR THE FUTURE
 
 - Add the option Write work information to file
+- Change all fmt.Print* functions to os.Stdout.Write (or something similar) for better performance and GC performance
 - Make the print formating better
 - Add the option to edit work, monjog, price_tags and ...
 - Clean up and add better UI for the main file in cmd
