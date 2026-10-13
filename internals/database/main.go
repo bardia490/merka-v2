@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 )
 
 var db *DB
@@ -448,9 +449,11 @@ func (work *Work) print_v2(verbose bool, output *strings.Builder) {
 		fmt.Printf("ERROR: there was a problem can calculating the price of the time, please correct the mistake and try again later. the error: %s.\n Aborting Operation\n", err.Error())
 		return
 	}
-	var numBuf [32]byte
-	output.WriteString("the total price for work is: ")
 	total_price += time_price
+	var numBuf [32]byte
+	if verbose {
+		output.WriteString("the total price for work is: ")
+	}
 	output.Write(strconv.AppendFloat(numBuf[:0], total_price, 'f', 2, 64))
 	output.WriteByte('\n')
 	// TODO: add the discount mechanism after this
@@ -603,10 +606,10 @@ func WriteWorksToFile() {
 	var output strings.Builder
 	output.Grow(1024) // try to allocate enough buffer (the size may change in the future)
 
+	output.WriteString("work\t\tPrice\n")
 	for key, work := range db.Works {
-		output.WriteString("work: ")
 		output.WriteString(key)
-		output.WriteByte('\n')
+		output.WriteString("\t\t")
 		work.print_v2(false, &output) // don't write every detail only the final value
 	}
 	file, err := os.OpenFile("output.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
@@ -614,7 +617,11 @@ func WriteWorksToFile() {
 		//return err
 	}
 	defer file.Close()
+	// Wrap the target file directly in tabwriter
+	// minwidth=0, tabwidth=0, padding=4, padchar=' ', flags=0
+	tw := tabwriter.NewWriter(file, 0, 0, 4, ' ', 0)
+	tw.Write([]byte(output.String()))
 
-	_, err = file.WriteString(output.String())
+	tw.Flush()
 	//return err
 }
