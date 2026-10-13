@@ -20,90 +20,111 @@ func (s *setting) Clear(flag setting)   { *s &^= flag }
 func (s *setting) Toggle(flag setting)  { *s ^= flag }
 
 // for checking if the time:price field has been set and time_price >= 0
-func runTimePriceCheck() {
+func runTimePriceCheck() error {
 	p := db.Time["price"]
 	price, err := p.resolve()
 	if err != nil {
-		fmt.Printf("there is a problem with time:price => %s\n", err.Error())
+		return fmt.Errorf("there is a problem with time:price => %s\n", err.Error())
 	} else if price <= 0 {
-		fmt.Printf("the price for time was 0 or negative: %f\n", price)
+		return fmt.Errorf("the price for time was 0 or negative: %f\n", price)
 	}
+	return nil
 }
 
 // checks to see if the work has a dedicated work time (minute) count
-func (work *Work) runTimePriceChecks(name string) {
+func (work *Work) runTimePriceChecks(name string) error {
 	time := work.Time
 	if time <= 0 {
-		fmt.Printf("in work: %s, the price for time was either 0 or negative: %f\n", name, time)
+		return fmt.Errorf("in work: %s, the price for time was either 0 or negative: %f\n", name, time)
 	}
+	return nil
 }
 
 // checks if the work has a non-empty monjogs field
-func (work *Work) runMonjogsCheck(name string) {
+func (work *Work) runMonjogsCheck(name string) error {
 	if len(work.Monjogs) == 0 {
-		fmt.Printf("there are no monjogs in the work: %s\n", name)
+		return fmt.Errorf("there are no monjogs in the work: %s\n", name)
 	}
+	return nil
 }
 
 // checks if the work has a non-empty materials field
-func (work *Work) runMaterialsCheck(name string) {
+func (work *Work) runMaterialsCheck(name string) error {
 	if len(work.Materials) == 0 {
-		fmt.Printf("there are no materials in the work: %s\n", name)
+		return fmt.Errorf("there are no materials in the work: %s\n", name)
 	}
+	return nil
 }
 
 // checks to see if a default price for price has been set
-func runCheckDefaultPrice() {
+func runCheckDefaultPrice() error {
 	_, code_ok := db.Codes["default"]
 	_, tag_ok := db.PriceTags["default"]
 	if !code_ok && !tag_ok {
-		fmt.Println("could not find the default value in the database")
+		return fmt.Errorf("could not find the default value in the database")
 	}
+	return nil
 }
 
 // runs all the checks to make sure everything in database is correct
-func runChecks(s setting) { // TODO: add seperators
+// returns a slice of errors to indicate everthing that went wrong
+func runChecks(s setting) []error { // TODO: add seperators
 	f_checkMonjogs := s.Has(checkMonjogs)
 	f_checkMaterials := s.Has(checkMaterials)
 	f_checkTimes := s.Has(checkTimes)
 	f_checkPrices := s.Has(checkPrices)
 	f_checkTime := s.Has(checkTime)
 	f_checkDefaultPrice := s.Has(checkDefaultPrice)
+	errors := make([]error, 0, 20) // the maximum number of errors depends on the number of work because for some the errors we check for each work, the capacity is set to 20 just in case
 
 	if f_checkDefaultPrice {
-		runCheckDefaultPrice()
+		if err := runCheckDefaultPrice(); err != nil {
+			errors = append(errors, err)
+		}
 	}
 	if f_checkTime {
-		runTimePriceCheck()
+		if err := runTimePriceCheck(); err != nil {
+			errors = append(errors, err)
+		}
 	}
 
 	for work_name, work := range db.Works {
 		if f_checkMonjogs {
-			work.runMonjogsCheck(work_name)
+			if err := work.runMonjogsCheck(work_name); err != nil {
+				errors = append(errors, err)
+			}
 		}
 		if f_checkMaterials {
-			work.runMaterialsCheck(work_name)
+			if err := work.runMaterialsCheck(work_name); err != nil {
+				errors = append(errors, err)
+			}
 		}
 		if f_checkTimes {
-			work.runTimePriceChecks(work_name)
+			if err := work.runTimePriceChecks(work_name); err != nil {
+				errors = append(errors, err)
+			}
 		}
 	}
 	if f_checkPrices {
 		for code_name, price := range db.Codes {
 			if _, err := price.resolve(); err != nil {
-				fmt.Printf("could not determine the price for Code: %s. ERROR: %s\n", code_name, err.Error())
+				new_err := fmt.Errorf("could not determine the price for Code: %s. ERROR: %s\n", code_name, err.Error())
+				errors = append(errors, new_err)
 			}
 		}
 		for material_name, price := range db.OtherMaterials {
 			if _, err := price.resolve(); err != nil {
-				fmt.Printf("could not determine the price for Material: %s. ERROR: %s\n", material_name, err.Error())
+				new_err := fmt.Errorf("could not determine the price for Material: %s. ERROR: %s\n", material_name, err.Error())
+				errors = append(errors, new_err)
 			}
 		}
 		additional_costs_price := db.AdditionalCosts["price"]
 		if _, err := additional_costs_price.resolve(); err != nil {
-			fmt.Printf("could not determine the price for additional_costs:price. ERROR: %s\n", err.Error())
+			new_err := fmt.Errorf("could not determine the price for additional_costs:price. ERROR: %s\n", err.Error())
+			errors = append(errors, new_err)
 		}
 	}
+	return errors
 }
 
 // Helper function for when encountering error during parsing the works.json file

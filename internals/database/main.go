@@ -73,6 +73,17 @@ func PrintFullDataBase() {
 // this should be used when we want to print a work based on its name and we also want
 // to check if the work exists beforehand (returns error if the work doesn't exist)
 func PrintWork(workname string) error {
+	// first make sure these things exist:
+	// if they dont exist error messages for each will be printed onto the screen
+	// and the function terminates
+	if errors := runChecks(checkTime | checkDefaultPrice); len(errors) != 0 {
+		fmt.Printf("the function cannot run due to the following errors:")
+		for error_number, err := range errors {
+			fmt.Printf("%d: %s", error_number+1, err.Error())
+			return fmt.Errorf("function terminated due to ERRORS!")
+		}
+	}
+
 	// if the work existed inside the database
 	if work, ok := db.Works[workname]; ok {
 		fmt.Println("work:", workname)
@@ -88,6 +99,15 @@ func printWorks(works map[string]Work, verbose bool) {
 		fmt.Println("there was no data here!")
 		return
 	}
+	// make sure Time price and Default Price have been set, if not then terminate early
+	if errors := runChecks(checkTime | checkDefaultPrice); len(errors) != 0 {
+		fmt.Printf("the function cannot run due to the following errors:")
+		for error_number, err := range errors {
+			fmt.Printf("%d: %s", error_number+1, err.Error())
+			return
+		}
+	}
+
 	for key, work := range works {
 		fmt.Printf("work: %s\n", key)
 		work.print(verbose)
@@ -98,7 +118,8 @@ func printWorks(works map[string]Work, verbose bool) {
 // if a work exists inside the database we can use this function to print its
 // monjogs, materials and time (if unsure about the existence of the work,
 // should use DataBase.PrintWork function)
-// if verbose is set to true then the whole information about each monjog (including count, price and total price) is displayed
+// if verbose is set to true then the whole information about each monjog
+// (including count, price and total price) is displayed
 func (work *Work) print(verbose bool) {
 	total_price, monjog_price, material_price, time_price := 0.0, 0.0, 0.0, 0.0
 	var err error
@@ -243,7 +264,6 @@ func (price *Price) resolve() (float64, error) {
 }
 
 // this function assumes a code with the name [default] always exists and its non negative
-// TODO: Should probably add a checker function to make sure this is always the case (this is probably okay with the checker functions added now but i haven't tested it yet)
 func getDefaultPrice() float64 {
 	defaultPrice := db.Codes["default"]
 	val, _ := defaultPrice.resolve()
