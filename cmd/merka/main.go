@@ -27,6 +27,7 @@ func main() {
 		return
 	}
 	database.PrintFullDataBase()
+	database.WriteWorksToFile()
 	//if err := database.PrintWork("goshvare_mosalasi2"); err != nil {
 	//	fmt.Println("couldn't print work")
 	//}

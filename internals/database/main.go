@@ -94,6 +94,8 @@ func PrintWork(workname string) error {
 }
 
 // prints all the works in database using the Print method for each work
+// if verbose is set to true then the whole information about each monjog
+// (including count, price and total price) is displayed
 func printWorks(works map[string]Work, verbose bool) {
 	if len(works) == 0 {
 		fmt.Println("there was no data here!")
@@ -407,4 +409,212 @@ func SaveDataBaseToFile() error {
 		return fmt.Errorf("failed to encode json: %w", err)
 	}
 	return nil
+}
+
+// NOTE: the following functions with the postfix v2 (*_v2) are going to
+// replace the functions with similar names that don't have the _v2 postfix
+// for now though they will be only used inside the WriteWorksToFile method
+// until I'm Done experimenting with them
+
+// TODO: fix the error handling in the following functions and replace the errors with a better struct
+// TODO: replace the legacy functions with the new _v2 functions
+
+// if a work exists inside the database we can use this function to print its
+// monjogs, materials and time (if unsure about the existence of the work,
+// should use DataBase.PrintWork function which takes a work_name parameter)
+// if verbose is set to true then the whole information about each monjog
+// (including count, price and total price) is displayed
+// NOTE: this function doesn't actually print anything, it recieves an output parameter
+// which collects the impotant information inside an strings.Builder struct and the user
+// can flush the information out later.
+// TODO: change functin name to write or writeToBuffer later
+func (work *Work) print_v2(verbose bool, output *strings.Builder) {
+	total_price, monjog_price, material_price, time_price := 0.0, 0.0, 0.0, 0.0
+	var err error
+	// print the complete monjogs prices and counts
+	if monjog_price, err = work.calcMonjogPrices_v2(verbose, output); err != nil {
+		fmt.Printf("ERROR: there was a problem can calculating the price of the monjogs, please correct the mistake and try again later. the error: %s.\n Aborting Operation\n", err.Error())
+		return
+	}
+	total_price += monjog_price
+	// print the materials
+	if material_price, err = work.calcMaterialPrices_v2(verbose, output); err != nil {
+		fmt.Printf("ERROR: there was a problem can calculating the price of the materials, please correct the mistake and try again later. the error: %s.\n Aborting Operation\n", err.Error())
+		return
+	}
+	total_price += material_price
+	// print the time
+	if time_price, err = work.calcTimePrice_v2(verbose, output); err != nil {
+		fmt.Printf("ERROR: there was a problem can calculating the price of the time, please correct the mistake and try again later. the error: %s.\n Aborting Operation\n", err.Error())
+		return
+	}
+	var numBuf [32]byte
+	output.WriteString("the total price for work is: ")
+	total_price += time_price
+	output.Write(strconv.AppendFloat(numBuf[:0], total_price, 'f', 2, 64))
+	output.WriteByte('\n')
+	// TODO: add the discount mechanism after this
+}
+
+// calculates the total price for the monjogs in [work]
+// if [verbose] is set to true, then the price for each monjog will
+// be displayed during calculation + the total price at the end
+// it returns the final price for monjogs or an error if any of the prices could not be
+// resolved (see [resolve] function for more details on resolving prices)
+// NOTE: this function doesn't actually print anything, it recieves an output parameter
+// which collects the impotant information inside an strings.Builder struct and the user
+// can flush the information out later.
+// NOTE: the ouput parameter will only be filled with information if the verbose flag is set to true
+func (work *Work) calcMonjogPrices_v2(verbose bool, output *strings.Builder) (total_price float64, resolve_error error) {
+	total_price = 0
+	for m_code, m_count := range work.Monjogs {
+		p := db.Codes[m_code]
+		price, err := p.resolve()
+		if err != nil {
+			fmt.Println("there was a problem with calculating the price of the monjogs")
+			return 0, err
+		}
+		total_price += price * float64(m_count)
+		if verbose {
+			// Reusable stack buffer for strconv formatting
+			var numBuf [32]byte
+
+			output.WriteString("monjog code: ")
+			output.WriteString(m_code)
+
+			output.WriteString("| monjog count: ")
+			// %f equivalent: -1 precision keeps default floating representation, or specify precision
+			output.Write(strconv.AppendFloat(numBuf[:0], m_count, 'f', -1, 64))
+
+			output.WriteString("| monjog price: ")
+			// %.2f equivalent: 2 decimal places
+			output.Write(strconv.AppendFloat(numBuf[:0], price, 'f', 2, 64))
+
+			output.WriteByte('\n')
+		}
+	}
+	if verbose {
+		// Reusable stack buffer for strconv formatting
+		var numBuf [32]byte
+		output.WriteString("the total price for monjogs is: ")
+		output.Write(strconv.AppendFloat(numBuf[:0], total_price, 'f', 2, 64))
+	}
+	return total_price, nil
+}
+
+// calculates the total price for the materials in [work]
+// if [verbose] is set to true, then the price for each material will
+// be displayed during calculation + the total price at the end
+// it returns the final price for materials or an error if any of the prices could not be
+// resolved (see [resolve] function for more details on resolving prices)
+// NOTE: this function doesn't actually print anything, it recieves an output parameter
+// which collects the impotant information inside an strings.Builder struct and the user
+// can flush the information out later.
+func (work *Work) calcMaterialPrices_v2(verbose bool, output *strings.Builder) (total_price float64, resolve_error error) {
+	total_price = 0
+	//Materials map[string]Price
+	if len(work.Materials) != 0 {
+		for m_name, m_count := range work.Materials {
+			p := db.OtherMaterials[m_name]
+			price, err := p.resolve()
+			if err != nil {
+				fmt.Printf("there was a problem with calculating the price of the material: %s\n", m_name)
+				return 0, err
+			}
+			if verbose {
+				// Reusable stack buffer for strconv formatting
+				var numBuf [32]byte
+
+				output.WriteString("monjog code: ")
+				output.WriteString(m_name)
+
+				output.WriteString("| material count: ")
+				output.Write(strconv.AppendFloat(numBuf[:0], m_count, 'f', -1, 64))
+
+				output.WriteString("| material price: ")
+				output.Write(strconv.AppendFloat(numBuf[:0], price, 'f', 2, 64))
+
+				output.WriteByte('\n')
+			}
+			total_price += price * float64(m_count)
+		}
+		if verbose {
+			// Reusable stack buffer for strconv formatting
+			var numBuf [32]byte
+			output.WriteString("the total price for materials is: ")
+			output.Write(strconv.AppendFloat(numBuf[:0], total_price, 'f', 2, 64))
+		}
+	}
+	return total_price, nil
+}
+
+// calculates the total price for the time in [work]
+// if [verbose] is set to true, then more information about the time of work will
+// be displayed during calculation + the total price at the end
+// it returns the final price for materials or an error if the price could not be
+// resolved (see [resolve] function for more details on resolving prices)
+// NOTE: this function doesn't actually print anything, it recieves an output parameter
+// which collects the impotant information inside an strings.Builder struct and the user
+// can flush the information out later.
+func (work *Work) calcTimePrice_v2(verbose bool, output *strings.Builder) (total_price float64, resolve_error error) {
+	// work.Time: float64
+	time := work.Time
+
+	//Time map[string]Price
+	p := db.Time["price"]
+	price, err := p.resolve()
+	if err != nil {
+		fmt.Println("there was a problem with calculating the price of the time")
+		return 0, err
+	}
+	total_price = time * price
+	if verbose {
+		// Reusable stack buffer for strconv formatting
+		var numBuf [32]byte
+
+		output.WriteString("total time for work: ")
+		output.Write(strconv.AppendFloat(numBuf[:0], time, 'f', 2, 64))
+
+		output.WriteString("| time price: ")
+		output.Write(strconv.AppendFloat(numBuf[:0], price, 'f', 2, 64))
+
+		output.WriteString("| total time price: ")
+		output.Write(strconv.AppendFloat(numBuf[:0], total_price, 'f', 2, 64))
+
+		output.WriteByte('\n')
+	}
+	return total_price, nil
+}
+
+func WriteWorksToFile() {
+	if len(db.Works) == 0 {
+		fmt.Println("there was no data here!")
+		return
+	}
+	// make sure Time price and Default Price have been set, if not then terminate early
+	if errors := runChecks(checkTime | checkDefaultPrice); len(errors) != 0 {
+		fmt.Printf("the function cannot run due to the following errors:")
+		for error_number, err := range errors {
+			fmt.Printf("%d: %s", error_number+1, err.Error())
+			return
+		}
+	}
+
+	var output strings.Builder
+	output.Grow(1024) // try to allocate enough buffer (the size may change in the future)
+
+	for key, work := range db.Works {
+		output.WriteString("work: ")
+		output.WriteString(key)
+		output.WriteByte('\n')
+		work.print_v2(false, &output) // don't write every detail only the final value
+	}
+	file, err := os.OpenFile("output.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		//return err
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(output.String())
+	//return err
 }
