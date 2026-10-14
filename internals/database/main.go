@@ -247,15 +247,17 @@ func Reload() error {
 // every -1 into the default price value (for legacy reasons)
 // if none of the above matches it will return an error
 func (price *Price) resolve() (float64, error) {
-	result := 0.0
 	if price.Kind == PriceValue {
 		result := price.Value
 		if result == -1.0 { // for legacy default value
 			result = getDefaultPrice() // this never fails
 		}
+		return result, nil
 	}
-	// PriceTag
-	result, ok := db.PriceTags[price.Tag]
+	// priceTag
+	var ok bool
+	result := 0.0
+	result, ok = db.PriceTags[price.Tag]
 	if !ok { // if the Tag wasn't set return an error
 		return 0, fmt.Errorf("could not resolve the price: %v. the Tag: %s could not be found, please add it", *price, price.Tag)
 	}
