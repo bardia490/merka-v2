@@ -139,8 +139,10 @@ func AddWork() {
 // prompts the user for the multiplier.
 // this function basically prompts the user for a float64 value
 // but the multiplier can also be the default value set in the works.json file
-// in the form of "default multiplier": float64, in case the user wants
-// the default value they must press Enter (empty string)
+// in the form of "default multiplier": float64.
+// in case the user wants the default value they must press Enter (empty string)
+// the value returned from this function garunteed not to be zero. (if the user enters 0
+// the value 1 is returned, which means don't change the price)
 func getMultiplierValueFromUser() float64 {
 	var answer float64
 	var err error
@@ -166,6 +168,9 @@ func getMultiplierValueFromUser() float64 {
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("this is probably not important but please report this: %s\n", err.Error())
+	}
+	if answer == 0 { // this means the there is no increase or decrease (1 also does this)
+		answer = 1
 	}
 	return answer
 }
