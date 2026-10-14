@@ -244,26 +244,23 @@ func Reload() error {
 // every price must be converted into an float64
 // this method will find the correct tag value (if the type is an price tag)
 // or the value (if the type is an value from the begining), it will also convert
-// every -1 into the default price value
+// every -1 into the default price value (for legacy reasons)
 // if none of the above matches it will return an error
 func (price *Price) resolve() (float64, error) {
-	switch price.Kind {
-	case PriceValue:
+	result := 0.0
+	if price.Kind == PriceValue {
 		result := price.Value
 		if result == -1.0 { // for legacy default value
 			result = getDefaultPrice() // this never fails
 		}
-		return result, nil
-	case PriceTag:
-		result := 0.0
-		if val, ok := db.PriceTags[price.Tag]; ok {
-			result = val
-		} else { // if the tag didn't exist or wasn't set, return an error
-			return 0, fmt.Errorf("could not resolve the price: %v. the Tag: %s could not be found, please add it", *price, price.Tag)
-		}
-		return result, nil
 	}
-	return 0, fmt.Errorf("could not resolve the price: %v. please contact your boyfriend immediatley", *price)
+	// PriceTag
+	result, ok := db.PriceTags[price.Tag]
+	if !ok { // if the Tag wasn't set return an error
+		return 0, fmt.Errorf("could not resolve the price: %v. the Tag: %s could not be found, please add it", *price, price.Tag)
+	}
+
+	return result, nil
 }
 
 // this function assumes a code with the name [default] always exists and its non negative
@@ -417,7 +414,6 @@ func SaveDataBaseToFile() error {
 // for now though they will be only used inside the WriteWorksToFile method
 // until I'm Done experimenting with them
 
-// TODO: fix the error handling in the following functions and replace the errors with a better struct
 // TODO: replace the legacy functions with the new _v2 functions
 
 // if a work exists inside the database we can use this function to print its
@@ -428,8 +424,9 @@ func SaveDataBaseToFile() error {
 // NOTE: this function doesn't actually print anything, it recieves an output parameter
 // which collects the impotant information inside an strings.Builder struct and the user
 // can flush the information out later.
-// TODO: change functin name to write or writeToBuffer later
-func (work *Work) print_v2(verbose bool, output *strings.Builder) {
+// TODO: add a configuration struct to this function so costumisation and adding
+// new settings could happen easier in the future
+func (work *Work) writeToBuffer(verbose bool, output *strings.Builder) {
 	total_price, monjog_price, material_price, time_price := 0.0, 0.0, 0.0, 0.0
 	var err error
 	// print the complete monjogs prices and counts
@@ -457,6 +454,11 @@ func (work *Work) print_v2(verbose bool, output *strings.Builder) {
 	output.Write(strconv.AppendFloat(numBuf[:0], total_price, 'f', 2, 64))
 	output.WriteByte('\n')
 	// TODO: add the discount mechanism after this
+	// TODO: add a getDiscount function because the discount can be either:
+	// 1) default value (probably 1.2)
+	// 2) float value
+	// 3) Tag value
+	// 4) probably could be part of the actuall work (could be added as a new field)
 }
 
 // calculates the total price for the monjogs in [work]
@@ -467,7 +469,9 @@ func (work *Work) print_v2(verbose bool, output *strings.Builder) {
 // NOTE: this function doesn't actually print anything, it recieves an output parameter
 // which collects the impotant information inside an strings.Builder struct and the user
 // can flush the information out later.
-// NOTE: the ouput parameter will only be filled with information if the verbose flag is set to true
+// NOTE: the ouput parameter will only be filled with information if the verbose flag
+// is set to true, otherwise the final price will be returned so the user
+// can decide what to do with it
 func (work *Work) calcMonjogPrices_v2(verbose bool, output *strings.Builder) (total_price float64, resolve_error error) {
 	total_price = 0
 	for m_code, m_count := range work.Monjogs {
@@ -513,6 +517,9 @@ func (work *Work) calcMonjogPrices_v2(verbose bool, output *strings.Builder) (to
 // NOTE: this function doesn't actually print anything, it recieves an output parameter
 // which collects the impotant information inside an strings.Builder struct and the user
 // can flush the information out later.
+// NOTE: the ouput parameter will only be filled with information if the verbose flag
+// is set to true, otherwise the final price will be returned so the user
+// can decide what to do with it
 func (work *Work) calcMaterialPrices_v2(verbose bool, output *strings.Builder) (total_price float64, resolve_error error) {
 	total_price = 0
 	//Materials map[string]Price
@@ -559,6 +566,9 @@ func (work *Work) calcMaterialPrices_v2(verbose bool, output *strings.Builder) (
 // NOTE: this function doesn't actually print anything, it recieves an output parameter
 // which collects the impotant information inside an strings.Builder struct and the user
 // can flush the information out later.
+// NOTE: the ouput parameter will only be filled with information if the verbose flag
+// is set to true, otherwise the final price will be returned so the user
+// can decide what to do with it
 func (work *Work) calcTimePrice_v2(verbose bool, output *strings.Builder) (total_price float64, resolve_error error) {
 	// work.Time: float64
 	time := work.Time
@@ -610,11 +620,12 @@ func WriteWorksToFile() {
 	for key, work := range db.Works {
 		output.WriteString(key)
 		output.WriteString("\t\t")
-		work.print_v2(false, &output) // don't write every detail only the final value
+		work.writeToBuffer(false, &output) // don't write every detail only the final value
 	}
 	file, err := os.OpenFile("output.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
-		//return err
+		fmt.Printf("Could not create file, the output due to:\n%s\nexiting the function for now", err.Error())
+		return
 	}
 	defer file.Close()
 	// Wrap the target file directly in tabwriter
@@ -623,5 +634,4 @@ func WriteWorksToFile() {
 	tw.Write([]byte(output.String()))
 
 	tw.Flush()
-	//return err
 }
