@@ -3,7 +3,7 @@
         "price": 0
     },
     "codes": {
-        "default" : 0
+        "default": 0
     },
     "other_materials": {
     },
@@ -13,5 +13,6 @@
     "works": {
     },
     "price tags": {
-    }
+    },
+    "default multiplier": 1.3,
 }

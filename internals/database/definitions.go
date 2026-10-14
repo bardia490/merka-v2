@@ -59,16 +59,20 @@ func (p Price) MarshalJSON() ([]byte, error) {
 
 // DataBase
 type DB struct {
-	Works           map[string]Work    `json:"works"`
-	Time            map[string]Price   `json:"time"`
-	OtherMaterials  map[string]Price   `json:"other_materials"`
-	Codes           map[string]Price   `json:"codes"`
-	AdditionalCosts map[string]Price   `json:"additional_costs"`
-	PriceTags       map[string]float64 `json:"price tags"`
+	Works             map[string]Work    `json:"works"`
+	Time              map[string]Price   `json:"time"`
+	OtherMaterials    map[string]Price   `json:"other_materials"`
+	Codes             map[string]Price   `json:"codes"`
+	AdditionalCosts   map[string]Price   `json:"additional_costs"`
+	PriceTags         map[string]float64 `json:"price tags"`
+	DefaultMultiplier float64            `json:"default multiplier"`
 }
 
-// tags work as follows:
+// NOTE: tags work as follows:
 // tag_nam1: float64 (tags cannot reference each other)
+
+// NOTE: DefaultMultiplier is only an float64 because its only one value and
+// probably doesn't need a Tag value
 
 // contains information on how to format and write the information about
 // each work
@@ -80,4 +84,7 @@ type workWriterSettings struct {
 	// usefull when there is a lot
 	//of work to be printed or written to file
 	writeOneDiscountValue bool
+	// if the writeOneDiscountValue is set the
+	// following value is used for the multiplier
+	defaultMultiplierValue float64
 }
