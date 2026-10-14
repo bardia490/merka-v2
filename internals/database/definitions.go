@@ -69,3 +69,15 @@ type DB struct {
 
 // tags work as follows:
 // tag_nam1: float64 (tags cannot reference each other)
+
+// contains information on how to format and write the information about
+// each work
+type workWriterSettings struct {
+	// tells the write or calc functions that use
+	// these settings to give full information about
+	// every step of the way
+	verbose bool
+	// usefull when there is a lot
+	//of work to be printed or written to file
+	writeOneDiscountValue bool
+}

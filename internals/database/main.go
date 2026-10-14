@@ -426,39 +426,38 @@ func SaveDataBaseToFile() error {
 // can flush the information out later.
 // TODO: add a configuration struct to this function so costumisation and adding
 // new settings could happen easier in the future
-func (work *Work) writeToBuffer(verbose bool, output *strings.Builder) {
+func (work *Work) writeToBuffer(output *strings.Builder, settings workWriterSettings) {
 	total_price, monjog_price, material_price, time_price := 0.0, 0.0, 0.0, 0.0
 	var err error
 	// print the complete monjogs prices and counts
-	if monjog_price, err = work.calcMonjogPrices_v2(verbose, output); err != nil {
+	if monjog_price, err = work.calcMonjogPrices_v2(output, settings); err != nil {
 		fmt.Printf("ERROR: there was a problem can calculating the price of the monjogs, please correct the mistake and try again later. the error: %s.\n Aborting Operation\n", err.Error())
 		return
 	}
 	total_price += monjog_price
 	// print the materials
-	if material_price, err = work.calcMaterialPrices_v2(verbose, output); err != nil {
+	if material_price, err = work.calcMaterialPrices_v2(output, settings); err != nil {
 		fmt.Printf("ERROR: there was a problem can calculating the price of the materials, please correct the mistake and try again later. the error: %s.\n Aborting Operation\n", err.Error())
 		return
 	}
 	total_price += material_price
 	// print the time
-	if time_price, err = work.calcTimePrice_v2(verbose, output); err != nil {
+	if time_price, err = work.calcTimePrice_v2(output, settings); err != nil {
 		fmt.Printf("ERROR: there was a problem can calculating the price of the time, please correct the mistake and try again later. the error: %s.\n Aborting Operation\n", err.Error())
 		return
 	}
 	total_price += time_price
 	var numBuf [32]byte
-	if verbose {
+	if settings.verbose {
 		output.WriteString("the total price for work is: ")
 	}
 	output.Write(strconv.AppendFloat(numBuf[:0], total_price, 'f', 2, 64))
 	output.WriteByte('\n')
 	// TODO: add the discount mechanism after this
 	// TODO: add a getDiscount function because the discount can be either:
-	// 1) default value (probably 1.2)
+	// 1) default value (probably 1.3)
 	// 2) float value
 	// 3) Tag value
-	// 4) probably could be part of the actuall work (could be added as a new field)
 }
 
 // calculates the total price for the monjogs in [work]
@@ -472,7 +471,7 @@ func (work *Work) writeToBuffer(verbose bool, output *strings.Builder) {
 // NOTE: the ouput parameter will only be filled with information if the verbose flag
 // is set to true, otherwise the final price will be returned so the user
 // can decide what to do with it
-func (work *Work) calcMonjogPrices_v2(verbose bool, output *strings.Builder) (total_price float64, resolve_error error) {
+func (work *Work) calcMonjogPrices_v2(output *strings.Builder, settings workWriterSettings) (total_price float64, resolve_error error) {
 	total_price = 0
 	for m_code, m_count := range work.Monjogs {
 		p := db.Codes[m_code]
@@ -482,7 +481,7 @@ func (work *Work) calcMonjogPrices_v2(verbose bool, output *strings.Builder) (to
 			return 0, err
 		}
 		total_price += price * float64(m_count)
-		if verbose {
+		if settings.verbose {
 			// Reusable stack buffer for strconv formatting
 			var numBuf [32]byte
 
@@ -500,7 +499,7 @@ func (work *Work) calcMonjogPrices_v2(verbose bool, output *strings.Builder) (to
 			output.WriteByte('\n')
 		}
 	}
-	if verbose {
+	if settings.verbose {
 		// Reusable stack buffer for strconv formatting
 		var numBuf [32]byte
 		output.WriteString("the total price for monjogs is: ")
@@ -520,7 +519,7 @@ func (work *Work) calcMonjogPrices_v2(verbose bool, output *strings.Builder) (to
 // NOTE: the ouput parameter will only be filled with information if the verbose flag
 // is set to true, otherwise the final price will be returned so the user
 // can decide what to do with it
-func (work *Work) calcMaterialPrices_v2(verbose bool, output *strings.Builder) (total_price float64, resolve_error error) {
+func (work *Work) calcMaterialPrices_v2(output *strings.Builder, settings workWriterSettings) (total_price float64, resolve_error error) {
 	total_price = 0
 	//Materials map[string]Price
 	if len(work.Materials) != 0 {
@@ -531,7 +530,7 @@ func (work *Work) calcMaterialPrices_v2(verbose bool, output *strings.Builder) (
 				fmt.Printf("there was a problem with calculating the price of the material: %s\n", m_name)
 				return 0, err
 			}
-			if verbose {
+			if settings.verbose {
 				// Reusable stack buffer for strconv formatting
 				var numBuf [32]byte
 
@@ -548,7 +547,7 @@ func (work *Work) calcMaterialPrices_v2(verbose bool, output *strings.Builder) (
 			}
 			total_price += price * float64(m_count)
 		}
-		if verbose {
+		if settings.verbose {
 			// Reusable stack buffer for strconv formatting
 			var numBuf [32]byte
 			output.WriteString("the total price for materials is: ")
@@ -569,7 +568,7 @@ func (work *Work) calcMaterialPrices_v2(verbose bool, output *strings.Builder) (
 // NOTE: the ouput parameter will only be filled with information if the verbose flag
 // is set to true, otherwise the final price will be returned so the user
 // can decide what to do with it
-func (work *Work) calcTimePrice_v2(verbose bool, output *strings.Builder) (total_price float64, resolve_error error) {
+func (work *Work) calcTimePrice_v2(output *strings.Builder, settings workWriterSettings) (total_price float64, resolve_error error) {
 	// work.Time: float64
 	time := work.Time
 
@@ -581,7 +580,7 @@ func (work *Work) calcTimePrice_v2(verbose bool, output *strings.Builder) (total
 		return 0, err
 	}
 	total_price = time * price
-	if verbose {
+	if settings.verbose {
 		// Reusable stack buffer for strconv formatting
 		var numBuf [32]byte
 
@@ -613,14 +612,20 @@ func WriteWorksToFile() {
 		}
 	}
 
+	// try to allocate enough buffer (the size may change in the future)
 	var output strings.Builder
-	output.Grow(1024) // try to allocate enough buffer (the size may change in the future)
-
+	output.Grow(1024)
+	// initialize the settings
+	settings := workWriterSettings{
+		verbose:               false, // don't write full information about each work
+		writeOneDiscountValue: true,  // use only one discount value for all the works
+	}
+	// the header
 	output.WriteString("work\t\tPrice\n")
 	for key, work := range db.Works {
 		output.WriteString(key)
 		output.WriteString("\t\t")
-		work.writeToBuffer(false, &output) // don't write every detail only the final value
+		work.writeToBuffer(&output, settings) // don't write every detail only the final value
 	}
 	file, err := os.OpenFile("output.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
