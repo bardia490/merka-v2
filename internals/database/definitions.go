@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-type PriceKind int // to I can diffrentiate between an actual price value and an PriceTag
+type PriceKind int // so I can diffrentiate between an actual price value and an PriceTag
 const (
 	PriceValue PriceKind = iota
 	PriceTag

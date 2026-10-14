@@ -6,10 +6,8 @@ the app will also be getting new updates to its UI alongside new features and pe
 
 # PLANED FOR THE FUTURE
 
-- Add the option Write work information to csv or excel file
-- Change all fmt.Print* functions to os.Stdout.Write (or something similar) for better performance and GC performance
-- Make the print formating better
+- Make the float formating better
 - Add the option to edit work, monjog, price_tags and ...
-- Add better error formating and printing
 - Clean up and add better UI for the main file in cmd
 - Fix all TODO's
+- (maybe) Add the option Write work information to csv or excel file
