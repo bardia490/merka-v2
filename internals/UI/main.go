@@ -3,6 +3,7 @@ package UI
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -74,7 +75,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() tea.View {
 	// The header
-	s := "What should we buy at the market?\n\n"
+	var s strings.Builder
+	s.WriteString("What should we buy at the market?\n\n")
 
 	// Iterate over our choices
 	for i, choice := range m.choices {
@@ -92,14 +94,19 @@ func (m model) View() tea.View {
 		}
 
 		// Render the row
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
+		s.WriteString(cursor)
+		s.WriteByte('[')
+		s.WriteString(checked)
+		s.WriteByte(']')
+		s.WriteString(choice)
+		s.WriteByte('\n')
 	}
 
 	// The footer
-	s += "\nPress q to quit.\n"
+	s.WriteString("\nPress q to quit.\n")
 
 	// Send the UI for rendering
-	return tea.NewView(s)
+	return tea.NewView(s.String())
 }
 
 func Main() {

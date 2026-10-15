@@ -276,7 +276,7 @@ func (work *Work) writeToBuffer(output *strings.Builder, settings workWriterSett
 	if settings.verbose {
 		output.WriteString("the total price for work is: ")
 	}
-	output.Write(utility.AppendPrettyFloat(numBuf[:0], total_price, 2, '_'))
+	output.Write(utility.AppendPrettyFloat(numBuf[:0], total_price, 2, ','))
 	if !settings.verbose {
 		output.WriteByte('\t')
 	}
@@ -294,7 +294,7 @@ func (work *Work) writeToBuffer(output *strings.Builder, settings workWriterSett
 	if settings.verbose {
 		output.WriteString(" the total price for work after discount is: ")
 	}
-	output.Write(utility.AppendPrettyFloat(numBuf[:0], total_price, 2, '_'))
+	output.Write(utility.AppendPrettyFloat(numBuf[:0], total_price, 2, ','))
 	output.WriteByte('\n')
 }
 
@@ -330,7 +330,7 @@ func (work *Work) calcMonjogPrices(output *strings.Builder, settings workWriterS
 			output.Write(strconv.AppendFloat(numBuf[:0], m_count, 'f', -1, 64))
 
 			output.WriteString("\tmonjog price: ")
-			output.Write(utility.AppendPrettyFloat(numBuf[:0], price, 2, '_'))
+			output.Write(utility.AppendPrettyFloat(numBuf[:0], price, 2, ','))
 
 			output.WriteByte('\n')
 		}
@@ -339,7 +339,7 @@ func (work *Work) calcMonjogPrices(output *strings.Builder, settings workWriterS
 		// Reusable stack buffer for strconv formatting
 		var numBuf [32]byte
 		output.WriteString("the total price for monjogs is: ")
-		output.Write(utility.AppendPrettyFloat(numBuf[:0], total_price, 2, '_'))
+		output.Write(utility.AppendPrettyFloat(numBuf[:0], total_price, 2, ','))
 		output.WriteByte('\n')
 	}
 	return total_price, nil
@@ -378,7 +378,7 @@ func (work *Work) calcMaterialPrices(output *strings.Builder, settings workWrite
 				output.Write(strconv.AppendFloat(numBuf[:0], m_count, 'f', -1, 64))
 
 				output.WriteString("\tmaterial price: ")
-				output.Write(utility.AppendPrettyFloat(numBuf[:0], price, 2, '_'))
+				output.Write(utility.AppendPrettyFloat(numBuf[:0], price, 2, ','))
 
 				output.WriteByte('\n')
 			}
@@ -388,7 +388,7 @@ func (work *Work) calcMaterialPrices(output *strings.Builder, settings workWrite
 			// Reusable stack buffer for strconv formatting
 			var numBuf [32]byte
 			output.WriteString("the total price for materials is: ")
-			output.Write(utility.AppendPrettyFloat(numBuf[:0], total_price, 2, '_'))
+			output.Write(utility.AppendPrettyFloat(numBuf[:0], total_price, 2, ','))
 			output.WriteByte('\n')
 		}
 	}
@@ -426,10 +426,10 @@ func (work *Work) calcTimePrice(output *strings.Builder, settings workWriterSett
 		output.Write(strconv.AppendFloat(numBuf[:0], time, 'f', 2, 64))
 
 		output.WriteString("\ttime price: ")
-		output.Write(utility.AppendPrettyFloat(numBuf[:0], price, 2, '_'))
+		output.Write(utility.AppendPrettyFloat(numBuf[:0], price, 2, ','))
 
 		output.WriteString("\ttotal time price: ")
-		output.Write(utility.AppendPrettyFloat(numBuf[:0], total_price, 2, '_'))
+		output.Write(utility.AppendPrettyFloat(numBuf[:0], total_price, 2, ','))
 
 		output.WriteByte('\n')
 	}
@@ -469,7 +469,7 @@ func WriteWorksToFile() {
 		output.WriteString("\t\t")
 		work.writeToBuffer(&output, settings) // don't write every detail only the final value
 	}
-	file, err := os.OpenFile("output2.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	file, err := os.OpenFile("output.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		fmt.Printf("Could not create file, the output due to:\n%s\nexiting the function for now", err.Error())
 		return
