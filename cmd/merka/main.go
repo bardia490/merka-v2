@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"merka-v2/internals/UI"
 	database "merka-v2/internals/database"
 )
 
@@ -26,6 +27,7 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
+	UI.Main()
 	database.PrintFullDataBase()
 	database.WriteWorksToFile()
 	//if err := database.PrintWork("goshvare_mosalasi2"); err != nil {
