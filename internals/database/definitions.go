@@ -81,6 +81,11 @@ type workWriterSettings struct {
 	// these settings to give full information about
 	// every step of the way
 	verbose bool
+	// writes the data in a non-verbose table format
+	// perfect for table UI design.
+	// NOTE: in order to use this option the [verbose] flag
+	// must be set to false
+	tableFormat bool
 	// usefull when there is a lot
 	//of work to be printed or written to file
 	writeOneDiscountValue bool

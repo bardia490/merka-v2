@@ -5,6 +5,7 @@ import (
 	"encoding/json/v2"
 	"errors"
 	"fmt"
+	"merka-v2/internals/UI"
 	"merka-v2/pkg/utility"
 	"os"
 	"strconv"
@@ -481,4 +482,53 @@ func WriteWorksToFile() {
 	tw.Write([]byte(output.String()))
 
 	tw.Flush()
+}
+
+func PrintWorkTable() {
+	if len(db.Works) == 0 {
+		fmt.Println("there was no data here!")
+		return
+	}
+	// make sure Time price and Default Price have been set, if not then terminate early
+	if errors := runChecks(checkTime | checkDefaultPrice); len(errors) != 0 {
+		fmt.Printf("the function cannot run due to the following errors:")
+		for error_number, err := range errors {
+			fmt.Printf("%d: %s", error_number+1, err.Error())
+			return
+		}
+	}
+
+	// try to allocate enough buffer (the size may change in the future)
+	var output strings.Builder
+	output.Grow(1024)
+
+	// set one defaultMultiplierValue value for all the works
+	multiplier := getMultiplierValueFromUser()
+	// initialize the settings
+	settings := workWriterSettings{
+		verbose:                false, // don't write full information about each work
+		tableFormat:            true,
+		writeOneDiscountValue:  true, // use only one discount value for all the works
+		defaultMultiplierValue: multiplier,
+	}
+
+	// the table header
+	columns := []string{
+		"Work",
+		"Price",
+		"Price with multiplier",
+	}
+	var rows [][]string
+	for key, work := range db.Works {
+		work.writeToBuffer(&output, settings) // don't write every detail only the final value
+		row := []string{
+			key,
+		}
+		row = append(row, strings.Split(strings.TrimSpace(output.String()), "\t")...)
+
+		rows = append(rows, row)
+		output.Reset()
+	}
+
+	UI.TableMain(columns, rows)
 }
