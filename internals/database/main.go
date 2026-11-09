@@ -17,6 +17,7 @@ var db *DB
 
 func init() {
 	db = newDB()
+	UI.Init()
 }
 
 // this function will initialize the [db] global variable when the library is imported
@@ -530,5 +531,6 @@ func PrintWorkTable() {
 		output.Reset()
 	}
 
-	UI.TableMain(columns, rows)
+	UI.SetTableContents(columns, rows)
+	UI.SwitchToPage("Table")
 }

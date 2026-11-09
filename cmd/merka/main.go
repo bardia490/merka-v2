@@ -16,7 +16,9 @@ package main
 
 import (
 	"fmt"
+	"merka-v2/internals/UI"
 	database "merka-v2/internals/database"
+	"os"
 )
 
 func main() {
@@ -25,6 +27,10 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 		return
+	}
+	if err := UI.Run(); err != nil {
+		fmt.Printf("app couldn't run because of: %s", err.Error())
+		os.Exit(1)
 	}
 	database.PrintWorkTable()
 	//database.PrintFullDataBase()

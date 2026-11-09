@@ -1,68 +1,85 @@
 package UI
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
-// TableMain renders columns and rows using tview
-func TableMain(headers []string, rows [][]string) {
-	app := tview.NewApplication()
+// NOTE: make sure to call addTablePage initialization of the program
+// so the following variable can be set; otherwise it will cause a runtime panic
+var activeTable *tview.Table
 
-	table := tview.NewTable().
-		SetBorders(true).
+// TODO: add comments
+func addTablePage(page_name string) {
+	activeTable = tview.NewTable().
 		SetSelectable(true, false) // Select whole rows, not individual cells
 
-	// 1. Set Header Row (Row 0)
-	for colIndex, header := range headers {
-		cell := tview.NewTableCell(header).
-			SetTextColor(tcell.ColorYellow).
-			SetAlign(tview.AlignCenter).
-			SetSelectable(false) // Headers shouldn't be selectable/focusable
-		table.SetCell(0, colIndex, cell)
-	}
-
-	// 2. Populate Data Rows (Starting at row 1)
-	for rowIndex, rowData := range rows {
-		for colIndex, val := range rowData {
-			cell := tview.NewTableCell(val).
-				SetTextColor(tcell.ColorWhite).
-				SetAlign(tview.AlignLeft)
-
-			// tview table takes 0-indexed rows where row 0 is our header,
-			// so data starts at rowIndex + 1
-			table.SetCell(rowIndex+1, colIndex, cell)
-		}
-	}
-
-	// 3. Handle selection/Enter key (equivalent to your "Let's go to..." action)
-	table.SetSelectedFunc(func(row, column int) {
-		selectedCell := table.GetCell(row, 1) // Column 1 is Price or whatever you need
+	// for now were just choosing the column 2 (price with discount)
+	activeTable.SetSelectedFunc(func(row, column int) {
+		selectedCell := activeTable.GetCell(row, 2) // Column 1 is Price or whatever you need
 		if selectedCell != nil {
-			// You can trigger actions or print info here.
-			// tview doesn't have tea.Printf directly, but we can write to app or exit with info.
-			app.Stop()
-			fmt.Printf("Let's go to %s!\n", selectedCell.Text)
+			App.result.valString = selectedCell.Text
+			App.result.isValueSet = true
 		}
 	})
 
 	// 4. Handle quit (q or esc/ctrl+c)
-	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	activeTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 'q' || event.Key() == tcell.KeyCtrlC {
-			app.Stop()
-			os.Exit(0)
+			App.pages.SwitchToPage("Start")
+			return nil
 		}
 		return event
 	})
 
 	// Focus the table and set it as root
-	table.Select(1, 0).SetFixed(1, 0) // Start cursor on first data row
+	activeTable.Select(1, 0).SetFixed(1, 0) // Start cursor on first data row
+	activeTable.Box.SetBorder(true)
 
-	if err := app.SetRoot(table, true).EnableMouse(true).Run(); err != nil {
-		fmt.Println("Error running program:", err)
-		os.Exit(1)
+	layout := tview.NewFlex().
+		SetDirection(tview.FlexRowCSS).
+		AddItem(nil, 0, 1, false).
+		AddItem(
+			tview.NewFlex().SetDirection(tview.FlexColumnCSS).
+				AddItem(nil, 0, 1, false).
+				AddItem(activeTable, 10, 0, true).
+				AddItem(nil, 0, 1, false),
+			60, 0, true,
+		).
+		AddItem(nil, 0, 1, false)
+	App.pages.AddPage(page_name, layout, true, false)
+}
+
+func SetTableContents(headers []string, rows [][]string) {
+	update := func() {
+		if activeTable == nil {
+			return
+		}
+		// 1. Set Header Row (Row 0)
+		for colIndex, header := range headers {
+			cell := tview.NewTableCell(header).
+				SetTextColor(tcell.ColorYellow).
+				SetAlign(tview.AlignLeft).
+				SetSelectable(false) // Headers shouldn't be selectable/focusable
+			activeTable.SetCell(0, colIndex, cell)
+		}
+
+		// 2. Populate Data Rows (Starting at row 1)
+		for rowIndex, rowData := range rows {
+			for colIndex, val := range rowData {
+				cell := tview.NewTableCell(val).
+					SetTextColor(tcell.ColorWhite).
+					SetAlign(tview.AlignLeft)
+
+				// tview table takes 0-indexed rows where row 0 is our header,
+				// so data starts at rowIndex + 1
+				activeTable.SetCell(rowIndex+1, colIndex, cell)
+			}
+		}
+	}
+	if App.app != nil {
+		App.app.QueueUpdateDraw(update)
+	} else {
+		update()
 	}
 }
