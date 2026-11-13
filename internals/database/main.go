@@ -5,24 +5,35 @@ import (
 	"encoding/json/v2"
 	"errors"
 	"fmt"
-	"merka-v2/internals/UI"
 	"merka-v2/pkg/utility"
 	"os"
 	"strconv"
 	"strings"
 	"text/tabwriter"
-)
 
-var db *DB
+	"github.com/rivo/tview"
+)
 
 func init() {
 	db = newDB()
-	UI.Init()
+	path := "configs/works.json"
+	err := LoadDataBase(path)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	App.app = tview.NewApplication()
+	App.pages = tview.NewPages()
+	// TODO: rename the following names
+	addStartingPage("Start")
+	//addPromptingPage("Select")
+	addMultiplierPage()
+	addTablePage("Table")
 }
 
 // this function will initialize the [db] global variable when the library is imported
-func newDB() *DB {
-	return &DB{
+func newDB() *DataBase {
+	return &DataBase{
 		Works:           make(map[string]Work),
 		Codes:           make(map[string]Price),
 		OtherMaterials:  make(map[string]Price),
@@ -485,11 +496,14 @@ func WriteWorksToFile() {
 	tw.Flush()
 }
 
-func PrintWorkTable() {
+// TODO: this name should change since it only collects the data but doesn't print anything
+func PrintWorkTable(multiplier float64) {
 	if len(db.Works) == 0 {
+		// TOOD: change this to a modal
 		fmt.Println("there was no data here!")
 		return
 	}
+	// TODO: this needs to change to a modal as well
 	// make sure Time price and Default Price have been set, if not then terminate early
 	if errors := runChecks(checkTime | checkDefaultPrice); len(errors) != 0 {
 		fmt.Printf("the function cannot run due to the following errors:")
@@ -503,8 +517,6 @@ func PrintWorkTable() {
 	var output strings.Builder
 	output.Grow(1024)
 
-	// set one defaultMultiplierValue value for all the works
-	multiplier := getMultiplierValueFromUser()
 	// initialize the settings
 	settings := workWriterSettings{
 		verbose:                false, // don't write full information about each work
@@ -512,13 +524,7 @@ func PrintWorkTable() {
 		writeOneDiscountValue:  true, // use only one discount value for all the works
 		defaultMultiplierValue: multiplier,
 	}
-
 	// the table header
-	columns := []string{
-		"Work",
-		"Price",
-		"Price with multiplier",
-	}
 	var rows [][]string
 	for key, work := range db.Works {
 		work.writeToBuffer(&output, settings) // don't write every detail only the final value
@@ -530,7 +536,6 @@ func PrintWorkTable() {
 		rows = append(rows, row)
 		output.Reset()
 	}
-
-	UI.SetTableContents(columns, rows)
-	UI.SwitchToPage("Table")
+	// send rows to be used for drawing the table
+	TableRowsChan <- rows
 }

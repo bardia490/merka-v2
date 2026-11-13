@@ -1,4 +1,4 @@
-package UI
+package database
 
 import (
 	"fmt"
@@ -165,8 +165,8 @@ func addPromptingPage(page_name string) {
 				return
 			}
 
-			App.result.isValueSet = true
-			App.result.valString = strings.TrimSpace(text)
+			App.Results.IsValueSet = true
+			App.Results.ValString = strings.TrimSpace(text)
 			App.app.Stop()
 
 		case tcell.KeyEscape:
@@ -218,140 +218,135 @@ func addPromptingPage(page_name string) {
 	App.pages.AddPage(page_name, layout, true, false)
 }
 
-// PromptMultiplier displays an interactive input modal on App.pages.
+var activeMultiplierPrompt *tview.Flex
+
+// addMultiplier adds a page that displays an interactive input modal on App.pages.
 // When valid input is entered or confirmed, onDone is called with the calculated multiplier.
 // If defaultMult is 0 or less, it will fall back to 1.0.
-func PromptMultiplier(defaultMult float64, onDone func(multiplier float64), onCancel func()) {
+func addMultiplierPage() {
 	const pageName = "MultiplierPrompt"
 
-	// 1. Informative description / instruction text
+	// 1. Text description
 	infoView := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignLeft)
 	infoView.SetBackgroundColor(colCardBg)
 
+	defaultMult := 1.2
 	defaultDisplay := fmt.Sprintf("%.2f", defaultMult)
 	if defaultMult <= 0 {
-		defaultDisplay = "1.00 (No change)"
+		defaultDisplay = "1.00"
 	}
 
 	infoText := fmt.Sprintf(
 		"[#cba6f7]Enter Price Multiplier[-]\n\n"+
-			"[#cdd6f4]• [#a6e3a1]> 1.0[-] (e.g. [#89dceb]1.25[-] = 25%% price increase)\n"+
-			"• [#f38ba8]< 1.0[-] (e.g. [#89dceb]0.75[-] = 25%% discount)\n"+
-			"• Press [#fab387]Enter[-] with empty input for default: [#89dceb]%s[-]\n"+
-			"• [#6c7086]0 or 1 keeps current price unchanged.[-]",
+			"[#cdd6f4]• [#a6e3a1]> 1.0[-] (e.g. [#89dceb]1.25[-] = +25%%)\n"+
+			"• [#f38ba8]< 1.0[-] (e.g. [#89dceb]0.75[-] = -25%%)\n"+
+			"• [#fab387]Enter[-] on empty for default ([#89dceb]%s[-])\n"+
+			"• [#6c7086]0 or 1 keeps price unchanged.[-]",
 		defaultDisplay,
 	)
 	infoView.SetText(infoText)
 
-	// 2. Error / status label
+	// 2. Status / Error Message
 	statusView := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter)
 	statusView.SetBackgroundColor(colCardBg)
 
-	// 3. Input field
+	// 3. Input Field
 	inputField := tview.NewInputField().
 		SetLabel("Multiplier: ").
-		SetFieldWidth(15).
-		SetPlaceholder(fmt.Sprintf("%.2f (Default)", defaultMult))
+		SetFieldWidth(12)
 
 	inputField.SetFieldBackgroundColor(colBg).
 		SetFieldTextColor(colText).
 		SetLabelColor(colCyan)
 
-	// Helper to process & submit
+	// 4. Submit handler
 	submit := func() {
 		raw := strings.TrimSpace(inputField.GetText())
 		var mult float64
 
 		if len(raw) == 0 {
-			// User pressed Enter on empty field: use default
 			mult = defaultMult
 		} else {
 			parsed, err := strconv.ParseFloat(raw, 64)
 			if err != nil || parsed < 0 {
-				statusView.SetText("[#f38ba8]⚠ Invalid number. Enter e.g. 1.25 or leave empty.[-]")
+				statusView.SetText("[#f38ba8]⚠ Invalid number format[-]")
 				return
 			}
 			mult = parsed
 		}
 
-		// As per your original logic: 0 means no change (same as 1)
-		if mult == 0 {
+		if mult <= 0 {
 			mult = 1.0
 		}
 
-		// Cleanup page and trigger success callback
-		App.pages.RemovePage(pageName)
-		if onDone != nil {
-			onDone(mult)
-		}
+		App.Results.IsValueSet = true
+		App.Results.ValFloat = mult
+		inputField.SetText("")
+		PrintWorkTable(mult) // TODO: this name will change in the future
+		App.pages.SwitchToPage("Table")
 	}
 
-	// Trigger submit on Enter
+	cancel := func() {
+		App.pages.SwitchToPage("Start")
+	}
+
 	inputField.SetDoneFunc(func(key tcell.Key) {
 		switch key {
 		case tcell.KeyEnter:
 			submit()
 		case tcell.KeyEscape:
-			App.pages.RemovePage(pageName)
-			if onCancel != nil {
-				onCancel()
-			}
+			cancel()
 		}
 	})
 
-	// 4. Form / Buttons
+	// 5. Buttons
 	btnOk := tview.NewButton("Confirm").SetSelectedFunc(submit)
-	btnCancel := tview.NewButton("Cancel").SetSelectedFunc(func() {
-		App.pages.RemovePage(pageName)
-		if onCancel != nil {
-			onCancel()
-		}
-	})
+	btnCancel := tview.NewButton("Cancel").SetSelectedFunc(cancel)
 
 	btnOk.SetBackgroundColor(colAccent)
+	btnOk.SetLabelColor(colBg)
 	btnCancel.SetBackgroundColor(colCardBg)
+	btnOk.SetLabelColor(colText)
 
 	btnRow := tview.NewFlex().
-		SetDirection(tview.FlexColumnCSS).
+		SetDirection(tview.FlexRowCSS).
 		AddItem(nil, 0, 1, false).
-		AddItem(btnOk, 12, 1, false).
+		AddItem(btnOk, 11, 0, false).
 		AddItem(nil, 2, 0, false).
-		AddItem(btnCancel, 12, 1, false).
+		AddItem(btnCancel, 11, 0, false).
 		AddItem(nil, 0, 1, false)
 
-	// 5. Container Card layout
+	// 6. Modal Card
+	// Total height = 5 (info) + 1 (spacing) + 1 (input) + 1 (status) + 1 (buttons) + 2 (borders) = ~11 rows
 	card := tview.NewFlex().
-		SetDirection(tview.FlexRowCSS).
-		AddItem(infoView, 6, 1, false).
-		AddItem(inputField, 2, 1, true).
-		AddItem(statusView, 1, 1, false).
+		SetDirection(tview.FlexColumnCSS).
+		AddItem(infoView, 5, 0, false).
 		AddItem(nil, 1, 0, false).
-		AddItem(btnRow, 1, 1, false)
+		AddItem(inputField, 1, 0, true).
+		AddItem(statusView, 1, 0, false).
+		AddItem(btnRow, 1, 0, false)
 
 	card.SetBorder(true).
-		SetTitle(" Set Multiplier ").
+		SetTitle(" Multiplier ").
 		SetTitleColor(colAccent).
 		SetBorderColor(colAccent).
 		SetBackgroundColor(colCardBg)
 
-	// Centered dialog
-	dialog := tview.NewFlex().
+	activeMultiplierPrompt = tview.NewFlex().
 		SetDirection(tview.FlexRowCSS).
 		AddItem(nil, 0, 1, false).
 		AddItem(
 			tview.NewFlex().SetDirection(tview.FlexColumnCSS).
 				AddItem(nil, 0, 1, false).
-				AddItem(card, 55, 1, true).
+				AddItem(card, 16, 0, true).
 				AddItem(nil, 0, 1, false),
-			13, 1, true,
+			33, 0, true,
 		).
 		AddItem(nil, 0, 1, false)
-
-	// Add modal over current content and give it immediate focus
-	App.pages.AddAndSwitchToPage(pageName, dialog, true)
-	App.app.SetFocus(inputField)
+	// Thread-safe update to make sure it immediately renders
+	App.pages.AddPage("MultiplierPrompt", activeMultiplierPrompt, true, false)
 }

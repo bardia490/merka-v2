@@ -1,9 +1,13 @@
 package database
 
+// global definitions for all packages to use
+
 import (
 	"encoding/json/v2"
 	"fmt"
 )
+
+var db *DataBase
 
 type PriceKind int // so I can diffrentiate between an actual price value and an PriceTag
 const (
@@ -58,7 +62,7 @@ func (p Price) MarshalJSON() ([]byte, error) {
 }
 
 // DataBase
-type DB struct {
+type DataBase struct {
 	Works             map[string]Work    `json:"works"`
 	Time              map[string]Price   `json:"time"`
 	OtherMaterials    map[string]Price   `json:"other_materials"`

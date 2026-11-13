@@ -1,6 +1,9 @@
-package UI
+package database
 
-import "github.com/rivo/tview"
+import (
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
+)
 
 // TODO: add comments
 func addStartingPage(page_name string) {
@@ -9,9 +12,14 @@ func addStartingPage(page_name string) {
 		SetTextAlign(tview.AlignCenter).
 		SetText("\n\n[#cba6f7]This is the default Page[-]\n\n[#6c7086]Press Right Arrow to go to selection[-]")
 	main_widget.SetBackgroundColor(colCardBg)
-	//main_widget.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-	//	return event
-	//})
+	main_widget.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyRight {
+			App.pages.SwitchToPage("MultiplierPrompt")
+		} else if event.Key() == tcell.KeyCtrlC {
+			App.app.Stop()
+		}
+		return event
+	})
 	layout := tview.NewFlex().
 		SetDirection(tview.FlexRowCSS).
 		AddItem(nil, 0, 1, false). // blank
@@ -26,4 +34,5 @@ func addStartingPage(page_name string) {
 	layout.SetBackgroundColor(colBg)
 	//func (p *Pages) AddPage(name string, item Primitive, resize, visible bool) *Pages
 	App.pages.AddPage(page_name, layout, true, true)
+	App.pages.SwitchToPage(page_name)
 }
