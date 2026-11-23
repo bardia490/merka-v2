@@ -26,6 +26,7 @@ func main() {
 		fmt.Printf("app couldn't run because of: %s", err.Error())
 		os.Exit(1)
 	}
+	database.PrintResults() // for debugging
 	//database.PrintWorkTable()
 	//database.PrintFullDataBase()
 	//database.WriteWorksToFile()

@@ -31,6 +31,15 @@ func init() {
 	addTablePage("Table")
 }
 
+// this function is for debugging purposes
+// it prints the values left in the Results of
+// of the App global variable
+func PrintResults() {
+	if App.Results.IsValueSet {
+		fmt.Printf("String: %s | Int: %d | Float: %f", App.Results.ValString, App.Results.ValInt, App.Results.ValFloat)
+	}
+}
+
 // this function will initialize the [db] global variable when the library is imported
 func newDB() *DataBase {
 	return &DataBase{
