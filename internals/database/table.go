@@ -29,21 +29,23 @@ func addTablePage(page_name string) {
 		if event.Rune() == 'q' || event.Key() == tcell.KeyCtrlC {
 			App.pages.SwitchToPage("Start")
 			return nil
+		} else if event.Key() == tcell.KeyEnter { // for now we just switch to the first page
+			App.pages.SwitchToPage("Start")
+			return nil
 		}
 		return event
 	})
 
 	// Focus the table and set it as root
-	activeTable.Select(1, 0).SetFixed(1, 0) // Start cursor on first data row
 	activeTable.Box.SetBorder(true)
-
+	activeTable.SetFixed(1, 0)
 	layout := tview.NewFlex().
 		SetDirection(tview.FlexRowCSS).
 		AddItem(nil, 0, 1, false).
 		AddItem(
 			tview.NewFlex().SetDirection(tview.FlexColumnCSS).
 				AddItem(nil, 0, 1, false).
-				AddItem(activeTable, 10, 0, true).
+				AddItem(activeTable, 15, 0, true).
 				AddItem(nil, 0, 1, false),
 			70, 0, true,
 		).
@@ -63,6 +65,8 @@ func UpdateTableContents() {
 			if activeTable == nil {
 				return
 			}
+			// Clear old cells and reset scroll state completely
+			activeTable.Clear()
 			// 1. Set Header Row (Row 0)
 			headers := []string{
 				"Work",
@@ -89,6 +93,11 @@ func UpdateTableContents() {
 					activeTable.SetCell(rowIndex+1, colIndex, cell)
 				}
 			}
+			if len(rows) > 0 {
+				activeTable.ScrollToBeginning()
+				activeTable.Select(1, 0)
+			}
+			App.app.SetFocus(activeTable)
 		})
 	}
 }
