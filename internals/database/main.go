@@ -26,9 +26,10 @@ func init() {
 	App.pages = tview.NewPages()
 	// TODO: rename the following names
 	addStartingPage("Start")
-	//addPromptingPage("Select")
+	addPromptingPage("Select")
 	addMultiplierPage()
 	addTablePage("Table")
+	addTodoPage("TODO")
 }
 
 // this function is for debugging purposes

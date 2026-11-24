@@ -1,6 +1,9 @@
 package database
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 // string functions
 
@@ -34,4 +37,14 @@ func ValidateFloat(in string) (correct bool, msg string) {
 		}
 	}
 	return true, "✓ Valid Number"
+}
+
+// TODO: add documentation
+func ValidateBasedOnOptions(options []string) {
+	currentStringValidator = func(in string) (correct bool, msg string) {
+		if slices.Contains(options, in) {
+			return true, "✓ Valid"
+		}
+		return false, fmt.Sprintf("✗ '%s' is not in the allowed list.", in)
+	}
 }

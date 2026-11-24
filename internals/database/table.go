@@ -24,7 +24,7 @@ func addTablePage(page_name string) {
 		}
 	})
 
-	// 4. Handle quit (q or esc/ctrl+c)
+	// Handle quit (q or esc/ctrl+c)
 	activeTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 'q' || event.Key() == tcell.KeyCtrlC {
 			App.pages.SwitchToPage("Start")
@@ -53,7 +53,7 @@ func addTablePage(page_name string) {
 	App.pages.AddPage(page_name, layout, true, false)
 }
 
-// this function is used to update the rows of the work table of neccasery
+// this function is used to update the rows of the work table of necessary
 // the function is designed to run on a seperate goroutine before App.Run is called.
 // IMPORTANT NOTE: the data must come from the TableRowsChan channel
 // if no data is recieved it will result in a hanging channel and sleep goroutine
@@ -67,7 +67,7 @@ func UpdateTableContents() {
 			}
 			// Clear old cells and reset scroll state completely
 			activeTable.Clear()
-			// 1. Set Header Row (Row 0)
+			// Set Header Row (Row 0)
 			headers := []string{
 				"Work",
 				"Price",
@@ -81,7 +81,7 @@ func UpdateTableContents() {
 				activeTable.SetCell(0, colIndex, cell)
 			}
 
-			// 2. Populate Data Rows (Starting at row 1)
+			// Populate Data Rows (Starting at row 1)
 			for rowIndex, rowData := range rows {
 				for colIndex, val := range rowData {
 					cell := tview.NewTableCell(val).

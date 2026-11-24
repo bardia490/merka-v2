@@ -9,24 +9,70 @@ import (
 	"github.com/rivo/tview"
 )
 
+// TODO: at this point the prompting functions below are only used for
+// getting user input based on some suggestions so it might be better to
+// rename them to PromptOption or something
+
+// variable for setting the possible answers (options) for prompts
 var validInputs []string
+
+// A channel for recieving new version of the prompt options
+var PromptOptionsChan = make(chan []string)
 
 // used for setting valid inputs and suggestions for the promptOption function
 func SetValidInputs(inputs []string) {
 	validInputs = inputs
 }
 
+var suggestionsPane *tview.List
+var input *tview.InputField
+
+func updateSuggestions(currentText string) {
+	trimmed := strings.TrimSpace(currentText)
+	suggestionsPane.Clear()
+
+	count := 0
+	for _, lang := range validInputs {
+		if trimmed == "" || strings.HasPrefix(strings.ToLower(lang), strings.ToLower(trimmed)) {
+			selectedLang := lang
+			// AddItem sets the text and a callback fired on Click or Enter
+			suggestionsPane.AddItem("  • "+selectedLang, "", 0, func() {
+				input.SetText(selectedLang) // Fill input with chosen language
+				App.app.SetFocus(input)     // Return focus to input
+			})
+			count++
+		}
+	}
+
+	if count == 0 {
+		suggestionsPane.AddItem("  [#f38ba8]No matching languages[-]", "", 0, nil)
+	}
+}
+
+// this function is used to update the suggestions of the prompting functions table of necessary
+// the function is designed to run on a seperate goroutine before App.Run is called.
+// IMPORTANT NOTE: the data must come from the UpdatePromptOptions channel
+// if no data is recieved it will result in a hanging channel and a sleep goroutine
+func UpdatePromptOptions() {
+	for {
+		validInputs = <-PromptOptionsChan
+		App.app.QueueUpdateDraw(func() {
+			updateSuggestions("")
+		})
+	}
+}
+
 // TODO: add comments
 func addPromptingPage(page_name string) {
-	// --- 1. Feedback / Status Label ---
+	// Feedback / Status Label
 	statusView := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter)
 	statusView.SetBackgroundColor(colCardBg)
 	statusView.SetText("[#6c7086]Type to search. Must match a valid language.[-]")
 
-	// --- 2. Input Field ---
-	input := tview.NewInputField().
+	// Input Field
+	input = tview.NewInputField().
 		SetLabel("  Language: ").
 		SetFieldWidth(32).
 		SetPlaceholder("").                     //"e.g. Go, Zig, Rust..."
@@ -45,68 +91,47 @@ func addPromptingPage(page_name string) {
 
 	input.SetAutocompleteStyles(colCardBg, mainStyle, selectedStyle)
 
-	right_pane := tview.NewList().
+	suggestionsPane = tview.NewList().
 		ShowSecondaryText(false).
 		SetSelectedTextColor(colAccent).
 		SetSelectedBackgroundColor(tcell.NewHexColor(0x313244)).
 		SetMainTextColor(colText)
 
-	right_pane.SetBorder(true).
+	suggestionsPane.SetBorder(true).
 		SetTitle(" Available suggestions (Click / Enter to choose) ").
 		SetTitleAlign(tview.AlignCenter).
 		SetTitleColor(colAccent).
 		SetBorderColor(colAccent).
 		SetBackgroundColor(colCardBg)
 
-	right_pane.SetMouseCapture(func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
+	suggestionsPane.SetMouseCapture(func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
 		switch action {
 		case tview.MouseScrollUp:
-			cur := right_pane.GetCurrentItem()
+			cur := suggestionsPane.GetCurrentItem()
 			if cur > 0 {
-				right_pane.SetCurrentItem(cur - 1)
+				suggestionsPane.SetCurrentItem(cur - 1)
 			}
 			return action, nil // Event consumed
 		case tview.MouseScrollDown:
-			cur := right_pane.GetCurrentItem()
-			if cur < right_pane.GetItemCount()-1 {
-				right_pane.SetCurrentItem(cur + 1)
+			cur := suggestionsPane.GetCurrentItem()
+			if cur < suggestionsPane.GetItemCount()-1 {
+				suggestionsPane.SetCurrentItem(cur + 1)
 			}
 			return action, nil // Event consumed
 		}
 		return action, event
 	})
-	right_pane.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	suggestionsPane.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEscape {
 			App.app.SetFocus(input)
 			return nil
 		}
-		if event.Key() == tcell.KeyUp && right_pane.GetCurrentItem() == 0 {
+		if event.Key() == tcell.KeyUp && suggestionsPane.GetCurrentItem() == 0 {
 			App.app.SetFocus(input)
 			return nil
 		}
 		return event
 	})
-	updateSuggestions := func(currentText string) {
-		trimmed := strings.TrimSpace(currentText)
-		right_pane.Clear()
-
-		count := 0
-		for _, lang := range validInputs {
-			if trimmed == "" || strings.HasPrefix(strings.ToLower(lang), strings.ToLower(trimmed)) {
-				selectedLang := lang
-				// AddItem sets the text and a callback fired on Click or Enter
-				right_pane.AddItem("  • "+selectedLang, "", 0, func() {
-					input.SetText(selectedLang) // Fill input with chosen language
-					App.app.SetFocus(input)     // Return focus to input
-				})
-				count++
-			}
-		}
-
-		if count == 0 {
-			right_pane.AddItem("  [#f38ba8]No matching languages[-]", "", 0, nil)
-		}
-	}
 	updateSuggestions("")
 	// Autocomplete suggestion generator
 	input.SetAutocompleteFunc(func(currentText string) (entries []string) {
@@ -133,7 +158,7 @@ func addPromptingPage(page_name string) {
 		SetBackgroundColor(colCardBg).
 		SetBorderPadding(1, 1, 2, 2)
 
-	// --- 3. Real-Time Validator (Fires on every keystroke) ---
+	//  Real-Time Validator (Fires on every keystroke)
 	input.SetChangedFunc(func(text string) {
 		updateSuggestions(text)
 		if strings.TrimSpace(text) == "" {
@@ -152,7 +177,7 @@ func addPromptingPage(page_name string) {
 		}
 	})
 
-	// --- 4. Submit Validation (Fires on Enter) ---
+	// Submit Validation (Fires on Enter)
 	input.SetDoneFunc(func(key tcell.Key) {
 		switch key {
 		case tcell.KeyEnter:
@@ -167,16 +192,13 @@ func addPromptingPage(page_name string) {
 
 			App.Results.IsValueSet = true
 			App.Results.ValString = strings.TrimSpace(text)
-			App.app.Stop()
-
-		case tcell.KeyEscape:
-			App.app.Stop()
+			App.pages.SwitchToPage("TODO")
 		}
 	})
 	input.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyDown || event.Key() == tcell.KeyTab {
-			if right_pane.GetItemCount() > 0 {
-				App.app.SetFocus(right_pane)
+			if suggestionsPane.GetItemCount() > 0 {
+				App.app.SetFocus(suggestionsPane)
 				return nil
 			}
 		}
@@ -209,7 +231,7 @@ func addPromptingPage(page_name string) {
 			AddItem(nil, 0, 1, false),
 			0, 1, true,
 		).
-		AddItem(right_pane, 0, 1, false) // blank
+		AddItem(suggestionsPane, 0, 1, false) // blank
 
 	layout.SetBackgroundColor(colBg)
 	// capture func(event *tcell.EventKey) *tcell.EventKey
@@ -218,15 +240,16 @@ func addPromptingPage(page_name string) {
 	App.pages.AddPage(page_name, layout, true, false)
 }
 
+// this probably doesn't even need to be global since the multiplier doesn't get updated unlike the other widgets
 var activeMultiplierPrompt *tview.Flex
 
 // addMultiplier adds a page that displays an interactive input modal on App.pages.
 // When valid input is entered or confirmed, onDone is called with the calculated multiplier.
-// If defaultMult is 0 or less, it will fall back to 1.0.
+// If defaultMult is 0 or less, it will fall back to 1.0
 func addMultiplierPage() {
 	const pageName = "MultiplierPrompt"
 
-	// 1. Text description
+	// Text description
 	infoView := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignLeft)
@@ -248,13 +271,13 @@ func addMultiplierPage() {
 	)
 	infoView.SetText(infoText)
 
-	// 2. Status / Error Message
+	// Status / Error Message
 	statusView := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter)
 	statusView.SetBackgroundColor(colCardBg)
 
-	// 3. Input Field
+	// Input Field
 	inputField := tview.NewInputField().
 		SetLabel("Multiplier: ").
 		SetFieldWidth(12)
@@ -263,7 +286,7 @@ func addMultiplierPage() {
 		SetFieldTextColor(colText).
 		SetLabelColor(colCyan)
 
-	// 4. Submit handler
+	// Submit handler
 	submit := func() {
 		raw := strings.TrimSpace(inputField.GetText())
 		var mult float64
@@ -303,7 +326,7 @@ func addMultiplierPage() {
 		}
 	})
 
-	// 5. Buttons
+	// Buttons
 	btnOk := tview.NewButton("Confirm").SetSelectedFunc(submit)
 	btnCancel := tview.NewButton("Cancel").SetSelectedFunc(cancel)
 
@@ -320,7 +343,7 @@ func addMultiplierPage() {
 		AddItem(btnCancel, 11, 0, false).
 		AddItem(nil, 0, 1, false)
 
-	// 6. Modal Card
+	// Modal Card
 	// Total height = 5 (info) + 1 (spacing) + 1 (input) + 1 (status) + 1 (buttons) + 2 (borders) = ~11 rows
 	card := tview.NewFlex().
 		SetDirection(tview.FlexColumnCSS).

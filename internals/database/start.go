@@ -9,14 +9,14 @@ import (
 
 // TODO: add comments
 func addStartingPage(page_name string) {
-	// 1. Header banner
+	// Header banner
 	header := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).
 		SetText("\n[#cba6f7::b]Navigation Dashboard[-:-:-]\n[#6c7086]Click an item or use Arrow keys + Enter[-]")
 	header.SetBackgroundColor(colCardBg)
 
-	// 2. Interactive List (Mouse Clickable & Keyboard Accessible)
+	// Interactive List (Mouse Clickable & Keyboard Accessible)
 	menuList := tview.NewList().
 		ShowSecondaryText(false).
 		SetHighlightFullLine(true).
@@ -32,19 +32,36 @@ func addStartingPage(page_name string) {
 		Label string
 	}{
 		{ID: "MultiplierPrompt", Label: "Show work prices"},
-		{ID: "B", Label: "Page B - Overview & Stats"},
-		{ID: "C", Label: "Page C - Settings & Config"},
-		{ID: "D", Label: "Page D - Logs & Activity"},
+		{ID: "Select", Label: "Select work name"},
+		{ID: "C", Label: "Settings & Config"},
 		{ID: "Exit", Label: "Exit the App"},
 	}
 
 	for _, p := range pagesList {
 		targetID := p.ID
 		menuList.AddItem(fmt.Sprintf("  ❯ %s", p.Label), "", 0, func() {
-			if targetID == "Exit" {
+			switch targetID {
+			case "Exit":
 				App.app.Stop() // TODO: add a clean up function for saving and stuff if needed
+			case "C":
+				App.pages.SwitchToPage("TODO")
+			case "Select":
+				// TODO: clean the following expressions
+				// i wrote this things as a means of proving
+				// my point but it really needs to be cleaned up
+				worknames := make([]string, len(db.Works))
+				i := 0
+				for workname := range db.Works {
+					worknames[i] = workname
+					i += 1
+				}
+				PromptOptionsChan <- worknames
+				ValidateBasedOnOptions(worknames)
+				App.pages.SwitchToPage("Select")
+				// TODO: reset the validator
+			default:
+				App.pages.SwitchToPage(targetID)
 			}
-			App.pages.SwitchToPage(targetID)
 		})
 	}
 
@@ -52,11 +69,6 @@ func addStartingPage(page_name string) {
 	menuList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlC {
 			App.app.Stop()
-			return nil
-		}
-		// Quick navigation with right arrow (e.g. to default prompt)
-		if event.Key() == tcell.KeyRight {
-			App.pages.SwitchToPage("MultiplierPrompt")
 			return nil
 		}
 		return event
@@ -80,7 +92,7 @@ func addStartingPage(page_name string) {
 		}
 		return action, event
 	})
-	// 3. Inner Card containing header + interactive items
+	// Inner Card containing header + interactive items
 	cardContent := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(header, 4, 1, false).
@@ -92,7 +104,7 @@ func addStartingPage(page_name string) {
 		SetTitle("[#89dceb::b] Home [-:-:-]").
 		SetTitleAlign(tview.AlignCenter)
 
-	// 4. Centered Layout (Rows + Columns Flex)
+	// Centered Layout (Rows + Columns Flex)
 	layout := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(nil, 0, 1, false). // Top spacer

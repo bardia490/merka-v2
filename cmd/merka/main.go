@@ -22,6 +22,7 @@ import (
 
 func main() {
 	go database.UpdateTableContents()
+	go database.UpdatePromptOptions()
 	if err := database.Run(); err != nil {
 		fmt.Printf("app couldn't run because of: %s", err.Error())
 		os.Exit(1)
