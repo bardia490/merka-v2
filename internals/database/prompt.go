@@ -19,14 +19,10 @@ var validInputs []string
 // A channel for recieving new version of the prompt options
 var PromptOptionsChan = make(chan []string)
 
-// used for setting valid inputs and suggestions for the promptOption function
-func SetValidInputs(inputs []string) {
-	validInputs = inputs
-}
-
 var suggestionsPane *tview.List
 var input *tview.InputField
 
+// updates what the user sees on the suggestions (right) pane
 func updateSuggestions(currentText string) {
 	trimmed := strings.TrimSpace(currentText)
 	suggestionsPane.Clear()
@@ -37,7 +33,7 @@ func updateSuggestions(currentText string) {
 			selectedLang := lang
 			// AddItem sets the text and a callback fired on Click or Enter
 			suggestionsPane.AddItem("  • "+selectedLang, "", 0, func() {
-				input.SetText(selectedLang) // Fill input with chosen language
+				input.SetText(selectedLang) // Fill input with chosen option
 				App.app.SetFocus(input)     // Return focus to input
 			})
 			count++
@@ -45,7 +41,7 @@ func updateSuggestions(currentText string) {
 	}
 
 	if count == 0 {
-		suggestionsPane.AddItem("  [#f38ba8]No matching languages[-]", "", 0, nil)
+		suggestionsPane.AddItem("  [#f38ba8]No matching Items[-]", "", 0, nil)
 	}
 }
 
@@ -57,6 +53,8 @@ func UpdatePromptOptions() {
 	for {
 		validInputs = <-PromptOptionsChan
 		App.app.QueueUpdateDraw(func() {
+			// in the begining the input field is empty
+			// so we don't suggest anything
 			updateSuggestions("")
 		})
 	}
@@ -69,13 +67,13 @@ func addPromptingPage(page_name string) {
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter)
 	statusView.SetBackgroundColor(colCardBg)
-	statusView.SetText("[#6c7086]Type to search. Must match a valid language.[-]")
+	statusView.SetText("[#6c7086]Type to search. Must match a valid input.[-]")
 
 	// Input Field
 	input = tview.NewInputField().
 		SetLabel("  Language: ").
 		SetFieldWidth(32).
-		SetPlaceholder("").                     //"e.g. Go, Zig, Rust..."
+		SetPlaceholder("").
 		SetPlaceholderTextColor(tcell.Color121) //colSubtext
 
 	// Styling the input field
@@ -84,8 +82,6 @@ func addPromptingPage(page_name string) {
 	input.SetFieldBackgroundColor(tcell.NewHexColor(0x313244))
 	input.SetBackgroundColor(colCardBg)
 
-	// Correct Autocomplete Styles signature:
-	// func (i *InputField) SetAutocompleteStyles(background tcell.Color, main, selected tcell.Style)
 	mainStyle := tcell.StyleDefault.Foreground(colText).Background(colCardBg)
 	selectedStyle := tcell.StyleDefault.Foreground(colAccent).Background(tcell.NewHexColor(0x313244))
 
@@ -152,7 +148,7 @@ func addPromptingPage(page_name string) {
 		SetDirection(tview.FlexRow)
 
 	card.SetBorder(true).
-		SetTitle(" 🚀 SELECT COMPILER / RUNTIME ").
+		SetTitle(" 🚀 SELECT AN OPTION").
 		SetTitleColor(colAccent).
 		SetBorderColor(colAccent).
 		SetBackgroundColor(colCardBg).
@@ -163,7 +159,7 @@ func addPromptingPage(page_name string) {
 		updateSuggestions(text)
 		if strings.TrimSpace(text) == "" {
 			card.SetBorderColor(colAccent)
-			statusView.SetText("[#6c7086]Type to search. Must match a valid language.[-]")
+			statusView.SetText("[#6c7086]Type to search. Must match a valid Option.[-]")
 			return
 		}
 
