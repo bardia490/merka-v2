@@ -15,6 +15,7 @@ import (
 )
 
 func init() {
+	// TODO: when done move the database part and application part to different init funcitons
 	db = newDB()
 	path := "configs/works.json"
 	err := LoadDataBase(path)

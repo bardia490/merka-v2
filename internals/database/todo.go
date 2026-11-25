@@ -20,7 +20,7 @@ func addTodoPage(page_name string) {
 
 	// Handle key events to let the user exit back to the start page
 	todoWidget.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Rune() == 'q' || event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyCtrlC {
+		if event.Rune() == 'q' || event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyEnter {
 			App.pages.SwitchToPage("Start")
 			return nil
 		}
