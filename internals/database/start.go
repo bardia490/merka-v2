@@ -32,6 +32,7 @@ func addStartingPage(page_name string) {
 		Label string
 	}{
 		{ID: "MultiplierPrompt", Label: "Show work prices"},
+		{ID: "WWP", Label: "Write work prices to file"},
 		{ID: "Select", Label: "Select work name"},
 		{ID: "C", Label: "Settings & Config"},
 		{ID: "Exit", Label: "Exit the App"},
@@ -59,6 +60,8 @@ func addStartingPage(page_name string) {
 				ValidateBasedOnOptions(worknames)
 				App.pages.SwitchToPage("Select")
 				// TODO: reset the validator
+			case "WWP":
+				App.pages.SwitchToPage("MultiplierPrompt")
 			default:
 				App.pages.SwitchToPage(targetID)
 			}

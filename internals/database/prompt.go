@@ -13,6 +13,7 @@ import (
 // getting user input based on some suggestions so it might be better to
 // rename them to PromptOption or something
 
+// TODO: this (probably) isn't needed anymore
 // variable for setting the possible answers (options) for prompts
 var validInputs []string
 
@@ -305,8 +306,18 @@ func addMultiplierPage() {
 		App.Results.IsValueSet = true
 		App.Results.ValFloat = mult
 		inputField.SetText("")
+		// TODO: change the following lines
+		// DESCRIPTION: right now everytime we call multiplierPrompt we
+		// write to the file and also print the table
+		// break this into multiple functions or accept multiple functions
+		// at the begining
 		PrintWorkTable(mult) // TODO: this name will change in the future
 		App.pages.SwitchToPage("Table")
+		WriteWorksToFile(mult)
+		OperationNameChan <- "Writing work prices to file"
+		OperationErrorChan <- nil
+		//SetOperationStatus(, nil)
+		App.pages.SwitchToPage("OperationStatus")
 	}
 
 	cancel := func() {

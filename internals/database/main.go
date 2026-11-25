@@ -31,8 +31,7 @@ func init() {
 	addMultiplierPage()
 	addTablePage("Table")
 	addTodoPage("TODO")
-	addTodoPage("TODO")
-	addOperationStatusPage("Status")
+	addOperationStatusPage("OperationStatus")
 }
 
 // this function is for debugging purposes
@@ -462,7 +461,9 @@ func (work *Work) calcTimePrice(output *strings.Builder, settings workWriterSett
 	return total_price, nil
 }
 
-func WriteWorksToFile() {
+// TODO: make the documentation better
+// the multiplier value comes from the multiplierPrompt page
+func WriteWorksToFile(multiplier float64) {
 	if len(db.Works) == 0 {
 		fmt.Println("there was no data here!")
 		return
@@ -480,8 +481,6 @@ func WriteWorksToFile() {
 	var output strings.Builder
 	output.Grow(1024)
 
-	// set one defaultMultiplierValue value for all the works
-	multiplier := getMultiplierValueFromUser()
 	// initialize the settings
 	settings := workWriterSettings{
 		verbose:                false, // don't write full information about each work

@@ -11,14 +11,16 @@ var activeMessage *tview.TextView
 var OperationNameChan = make(chan string)
 var OperationErrorChan = make(chan error)
 
-func SetOperationStatus(operationName string, err error) {
-	OperationNameChan <- operationName
-	OperationErrorChan <- err
+// TOOD: use the following struct instead of using two channels for the Name and Err
+// Single struct channel prevents race conditions and message desyncs
+type OperationStatus struct {
+	Name string
+	Err  error
 }
 
 // NOTE: this function needs to be called in a seperate goroutine
 // to handle updates at the very begining before calling App.app.Run()
-func UpdateSuccessMessage() {
+func UpdateStatusMessage() {
 	for {
 		var operationName string
 		var err error
@@ -74,10 +76,10 @@ func addOperationStatusPage(pageName string) {
 
 	// Center the card nicely in the middle of the screen
 	layout := tview.NewFlex().
-		SetDirection(tview.FlexRowCSS).
+		SetDirection(tview.FlexRow).
 		AddItem(nil, 0, 1, false).
 		AddItem(
-			tview.NewFlex().SetDirection(tview.FlexColumnCSS).
+			tview.NewFlex().SetDirection(tview.FlexColumn).
 				AddItem(nil, 0, 1, false).
 				AddItem(activeMessage, 54, 0, true). // Card width
 				AddItem(nil, 0, 1, false),
