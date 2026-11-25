@@ -31,6 +31,8 @@ func init() {
 	addMultiplierPage()
 	addTablePage("Table")
 	addTodoPage("TODO")
+	addTodoPage("TODO")
+	addOperationStatusPage("Status")
 }
 
 // this function is for debugging purposes
