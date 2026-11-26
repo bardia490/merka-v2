@@ -28,10 +28,21 @@ func init() {
 	// TODO: rename the following names
 	addStartingPage("Start")
 	addPromptingPage("Select")
-	addMultiplierPage()
 	addTablePage("Table")
 	addTodoPage("TODO")
 	addOperationStatusPage("OperationStatus")
+	addMultiplierPage("WorksToTable", func() {
+		// set up the table and draw it
+		PrintWorkTable(App.Results.ValFloat) // TODO: this name will change in the future
+		App.pages.SwitchToPage("Table")
+	})
+	addMultiplierPage("WorksToFile", func() {
+		// set up the table and draw it
+		WriteWorksToFile(App.Results.ValFloat)
+		OperationNameChan <- "Writing work prices to file"
+		OperationErrorChan <- nil
+		App.pages.SwitchToPage("OperationStatus")
+	})
 }
 
 // this function is for debugging purposes

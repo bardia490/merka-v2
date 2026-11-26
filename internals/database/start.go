@@ -31,9 +31,9 @@ func addStartingPage(page_name string) {
 		ID    string
 		Label string
 	}{
-		{ID: "MultiplierPrompt", Label: "Show work prices"},
-		{ID: "WWP", Label: "Write work prices to file"},
-		{ID: "Select", Label: "Select work name"},
+		{ID: "DisplayWorkPrices", Label: "Calculate Work Prices"},
+		{ID: "WriteWorksToFile", Label: "Write Work Prices to File"},
+		{ID: "Select", Label: "Select Work Name"},
 		{ID: "C", Label: "Settings & Config"},
 		{ID: "Exit", Label: "Exit the App"},
 	}
@@ -41,11 +41,13 @@ func addStartingPage(page_name string) {
 	for _, p := range pagesList {
 		targetID := p.ID
 		menuList.AddItem(fmt.Sprintf("  ❯ %s", p.Label), "", 0, func() {
+			// TODO: Should probably redesign the following section into multiple
+			// functions but for time being its fine
 			switch targetID {
-			case "Exit":
-				App.app.Stop() // TODO: add a clean up function for saving and stuff if needed
-			case "C":
-				App.pages.SwitchToPage("TODO")
+			case "DisplayWorkPrices":
+				App.pages.SwitchToPage("WorksToTable")
+			case "WriteWorksToFile":
+				App.pages.SwitchToPage("WorksToFile")
 			case "Select":
 				// TODO: clean the following expressions
 				// i wrote this things as a means of proving
@@ -60,10 +62,10 @@ func addStartingPage(page_name string) {
 				ValidateBasedOnOptions(worknames)
 				App.pages.SwitchToPage("Select")
 				// TODO: reset the validator
-			case "WWP":
-				App.pages.SwitchToPage("MultiplierPrompt")
+			case "Exit":
+				App.app.Stop() // TODO: add a clean up function for saving and stuff if needed
 			default:
-				App.pages.SwitchToPage(targetID)
+				App.pages.SwitchToPage("TODO")
 			}
 		})
 	}
