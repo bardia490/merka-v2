@@ -149,7 +149,7 @@ func addPromptingPage(page_name string) {
 		SetDirection(tview.FlexRow)
 
 	card.SetBorder(true).
-		SetTitle(" 🚀 SELECT AN OPTION").
+		SetTitle(" 🚀 SELECT AN OPTION ").
 		SetTitleColor(colAccent).
 		SetBorderColor(colAccent).
 		SetBackgroundColor(colCardBg).
@@ -316,7 +316,6 @@ func addMultiplierPage() {
 		WriteWorksToFile(mult)
 		OperationNameChan <- "Writing work prices to file"
 		OperationErrorChan <- nil
-		//SetOperationStatus(, nil)
 		App.pages.SwitchToPage("OperationStatus")
 	}
 

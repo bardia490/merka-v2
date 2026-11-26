@@ -31,7 +31,7 @@ func UpdateStatusMessage() {
 				// Success State
 				activeMessage.Box.
 					SetBorderColor(colSuccess).
-					SetTitle(" [ #a6e3a1]Success[#cdd6f4] ] ").
+					SetTitle(" [ [#a6e3a1]Success[#cdd6f4] ] ").
 					SetTitleColor(colSuccess)
 
 				textMsg := fmt.Sprintf(
@@ -43,7 +43,7 @@ func UpdateStatusMessage() {
 				// Failure / Error State
 				activeMessage.Box.
 					SetBorderColor(colError).
-					SetTitle(" [ #f38ba8]Error[#cdd6f4] ] ").
+					SetTitle(" [ [#f38ba8]Error[#cdd6f4] ] ").
 					SetTitleColor(colError)
 
 				textMsg := fmt.Sprintf(
