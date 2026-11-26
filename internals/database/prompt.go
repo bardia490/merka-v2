@@ -72,7 +72,7 @@ func addPromptingPage(page_name string) {
 	// Input Field
 	input = tview.NewInputField().
 		SetLabel("  Language: ").
-		SetFieldWidth(32).
+		SetFieldWidth(28).
 		SetPlaceholder("").
 		SetPlaceholderTextColor(tcell.Color121) //colSubtext
 
